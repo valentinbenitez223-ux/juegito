@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isMemberOfSpace(spaceData) {
+      return isAuthenticated() && (request.auth.uid in spaceData.members);
+    }
+
+    // Perfiles de usuario
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isUser(userId);
+    }
+
+    // Invitaciones de emparejamiento (un solo uso, máx 2 personas)
+    match /invitations/{inviteCode} {
+      // Cualquier usuario autenticado puede leer una invitación para verificarla
+      allow read: if isAuthenticated();
+      // Solo el creador puede emitir una invitación
+      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
+      // Actualizar la invitación solo para marcarla como 'used' por el segundo integrante
+      allow update: if isAuthenticated() && (
+        // El creador cancelando o el invitado reclamando
+        (resource.data.used == false && request.resource.data.used == true && request.resource.data.usedBy == request.auth.uid) ||
+        resource.data.createdBy == request.auth.uid
+      );
+      allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+    }
+
+    // Espacio compartido (El Nido)
+    match /spaces/{spaceId} {
+      // Lectura permitida solo a miembros del espacio
+      allow read: if isMemberOfSpace(resource.data);
+
+      // Creación del nido: el creador se incluye como único miembro inicial
+      allow create: if isAuthenticated() &&
+        request.resource.data.members.size() == 1 &&
+        request.resource.data.members[0] == request.auth.uid;
+
+      // Actualización del nido:
+      // Caso 1: Miembro existente actualiza el nido (mascota, economía, etc.) sin superar 2 miembros
+      // Caso 2: Nuevo usuario se suma como segundo miembro (members.size() pasa de 1 a 2)
+      allow update: if isAuthenticated() && (
+        (isMemberOfSpace(resource.data) && request.resource.data.members.size() <= 2) ||
+        (
+          resource.data.members.size() == 1 &&
+          request.resource.data.members.size() == 2 &&
+          request.resource.data.members[1] == request.auth.uid
+        )
+      );
+
+      // No se permite eliminar el nido directamente desde cliente
+      allow delete: if false;
+
+      // Subcolección: Actividad histórica
+      match /activity/{activityId} {
+        allow read: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data);
+        allow create: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data) &&
+                         request.resource.data.userId == request.auth.uid;
+        allow update, delete: if false; // El historial es inmutable
+      }
+
+      // Subcolección: Notas y mensajes de pareja
+      match /notes/{noteId} {
+        allow read: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data);
+        allow create: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data) &&
+                         request.resource.data.senderId == request.auth.uid;
+        // Permitir marcar como leída
+        allow update: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data);
+        allow delete: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data) &&
+                         resource.data.senderId == request.auth.uid;
+      }
+
+      // Subcolección: Recuerdos
+      match /memories/{memoryId} {
+        allow read: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data);
+        allow create: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data);
+        allow update, delete: if false;
+      }
+
+      // Subcolección: Rito diario
+      match /daily_rituals/{dateKey} {
+        allow read: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data);
+        allow create, update: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data);
+        allow delete: if false;
+      }
+    }
+  }
+}

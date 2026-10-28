@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgG" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" stopColor="#FFFDF7" />
+      <stop offset="65%" stopColor="#F5ECE0" />
+      <stop offset="100%" stopColor="#E6D7C3" />
+    </radialGradient>
+    <radialGradient id="petG" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stopColor="#A9C7B1" />
+      <stop offset="85%" stopColor="#7DA887" />
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo redondeado suave con borde orgánico -->
+  <rect width="512" height="512" rx="128" fill="#F7F3EC" />
+  <circle cx="256" cy="256" r="215" fill="#EAE2D5" opacity="0.6" />
+
+  <!-- Nido de ramitas cálidas -->
+  <ellipse cx="256" cy="400" rx="170" ry="50" fill="#D2BD9C" />
+  <path d="M 100,390 Q 180,440 256,420 Q 340,440 412,390 Q 330,445 256,435 Q 170,445 100,390 Z" fill="#B79E79" />
+  <circle cx="120" cy="380" r="14" fill="#A9C7B1" />
+  <circle cx="390" cy="385" r="16" fill="#EFB7B5" />
+
+  <!-- Criatura Pippo -->
+  <!-- Orejitas -->
+  <path d="M 170,190 Q 130,90 195,120 Q 230,160 215,210 Z" fill="url(#petG)" stroke="#6A9674" stroke-width="6" />
+  <path d="M 175,180 Q 150,115 190,135 Q 215,165 205,195 Z" fill="#EFB7B5" opacity="0.85" />
+
+  <path d="M 342,190 Q 382,90 317,120 Q 282,160 297,210 Z" fill="url(#petG)" stroke="#6A9674" stroke-width="6" />
+  <path d="M 337,180 Q 362,115 322,135 Q 297,165 307,195 Z" fill="#EFB7B5" opacity="0.85" />
+
+  <!-- Cuerpo -->
+  <path d="M 256,140 C 370,140 395,215 395,315 C 395,410 340,430 256,430 C 172,430 117,410 117,315 C 117,215 142,140 256,140 Z" fill="url(#petG)" stroke="#6A9674" stroke-width="7" />
+
+  <!-- Pancita -->
+  <ellipse cx="256" cy="330" rx="90" ry="75" fill="#FFFDF9" />
+
+  <!-- Mejillas sonrosadas -->
+  <ellipse cx="185" cy="275" rx="22" ry="14" fill="#F9A8A8" opacity="0.75" />
+  <ellipse cx="327" cy="275" rx="22" ry="14" fill="#F9A8A8" opacity="0.75" />
+
+  <!-- Ojitos con doble brillo -->
+  <ellipse cx="210" cy="245" rx="20" ry="24" fill="#343746" />
+  <circle cx="204" cy="237" r="8" fill="#FFFFFF" />
+  <circle cx="216" cy="253" r="4" fill="#FFFFFF" />
+
+  <ellipse cx="302" cy="245" rx="20" ry="24" fill="#343746" />
+  <circle cx="296" cy="237" r="8" fill="#FFFFFF" />
+  <circle cx="308" cy="253" r="4" fill="#FFFFFF" />
+
+  <!-- Nariz y boquita sonriente -->
+  <ellipse cx="256" cy="265" rx="8" ry="6" fill="#6A5A55" />
+  <path d="M 242,278 Q 250,290 256,282 Q 262,290 270,278" stroke="#343746" stroke-width="5" stroke-linecap="round" fill="none" />
+
+  <!-- Estrellitas de luceros alrededor -->
+  <polygon points="420,130 426,146 442,152 426,158 420,174 414,158 398,152 414,146" fill="#F3D88B" />
+  <polygon points="90,210 95,223 108,228 95,233 90,246 85,233 72,228 85,223" fill="#F3D88B" />
+  <polygon points="256,60 262,75 277,81 262,87 256,102 250,87 235,81 250,75" fill="#EFB7B5" />
+</svg>

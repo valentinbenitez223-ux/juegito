@@ -1,0 +1,18 @@
+{
+  "name": "Nuestro Nido | Mascota compartida para dos",
+  "short_name": "Nuestro Nido",
+  "description": "Cuidá una pequeña criatura con tu pareja, decorá su hogar y descubrí sorpresas cotidianas.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F3EC",
+  "theme_color": "#F7F3EC",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
