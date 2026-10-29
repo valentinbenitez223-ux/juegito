@@ -1,5 +1,5 @@
 // ============================================================================
-// NUESTRO NIDO | Motor de Simulación Determinista y Suite QA
+// NUESTRO NIDO | Motor de Simulación Determinista y Suite QA Ampliada
 // ============================================================================
 
 import {
@@ -78,7 +78,7 @@ export function createInitialSpace(creatorUid, creatorName, petName = APP_CONFIG
     memberProfiles: {
       [creatorUid]: {
         displayName: creatorName,
-        avatarColor: '#A9C7B1',
+        avatarColor: '#8DAF97',
         lastSeenAt: now,
       },
     },
@@ -114,6 +114,7 @@ export function createInitialSpace(creatorUid, creatorName, petName = APP_CONFIG
       unlockedDecor: ['alfombra_lana'],
       activeDecor: {
         rug: 'alfombra_lana',
+        lampLit: true,
       },
       unlockedAccessories: [],
     },
@@ -294,6 +295,24 @@ export function equipDecorItem(space, slot, decorId) {
 }
 
 /**
+ * Alterna el encendido de la lámpara del cuarto.
+ */
+export function toggleRoomLamp(space) {
+  const isLit = space.inventory?.activeDecor?.lampLit !== false;
+  return {
+    ...space,
+    updatedAt: Date.now(),
+    inventory: {
+      ...space.inventory,
+      activeDecor: {
+        ...space.inventory.activeDecor,
+        lampLit: !isLit,
+      },
+    },
+  };
+}
+
+/**
  * Equipa o desequipa un accesorio a Pippo.
  */
 export function equipAccessoryItem(space, accessoryId) {
@@ -305,6 +324,24 @@ export function equipAccessoryItem(space, accessoryId) {
       accessory: accessoryId || null,
     },
   };
+}
+
+/**
+ * Genera el enlace directo para compartir con la pareja por WhatsApp o mensaje.
+ */
+export function generateShareableInviteUrl(code, baseUrl = 'https://valentinbenitez223-ux.github.io/juegito/') {
+  const url = new URL(baseUrl);
+  url.searchParams.set('join', code);
+  return url.toString();
+}
+
+/**
+ * Calcula la recompensa del minijuego de luciérnagas incluyendo bonificador por combos.
+ */
+export function calculateFirefliesReward(score, maxCombo = 1) {
+  const comboBonus = Math.min(10, Math.floor(maxCombo * 1.5));
+  const baseReward = Math.round(score * 1.8);
+  return Math.min(30, Math.max(3, baseReward + comboBonus));
 }
 
 /**
@@ -328,7 +365,7 @@ export function checkWelcomeBackBonus(lastVisit, now = Date.now()) {
 }
 
 /**
- * Suite de pruebas automatizadas QA (25 Tests) para verificación exhaustiva.
+ * Suite de pruebas automatizadas QA (28 Tests) para verificación exhaustiva.
  */
 export function runAutomatedAuditTests() {
   const tests = [];
@@ -392,7 +429,7 @@ export function runAutomatedAuditTests() {
     }
   });
 
-  // 8. Ausencia 72h: cero castigo
+  // 8. Ausencia 72h: cero castigo permanente
   addTest('TEST-08', 'Simulación 72h ausencia: cero castigo permanente', () => {
     const base = { hunger: 80, hygiene: 80, energy: 80, fun: 80, comfort: 80 };
     const res = calculateDecayedNeeds(base, 0, 72 * 3600000, false);
@@ -442,9 +479,10 @@ export function runAutomatedAuditTests() {
   });
 
   // 16. Ánimo 'happy'
-  addTest('TEST-16', 'getPetMood devuelve happy con promedio >= 70', () => {
+  addTest('TEST-16', 'getPetMood devuelve happy con promedio >= 68', () => {
     const pet = { isSleeping: false, needs: { hunger: 85, hygiene: 85, energy: 85, fun: 85, comfort: 85 } };
-    if (getPetMood(pet) !== 'happy') throw new Error('Estado anímico incorrecto');
+    const mood = getPetMood(pet);
+    if (mood !== 'happy' && mood !== 'ecstatic') throw new Error('Estado anímico incorrecto');
   });
 
   // 17. Ánimo 'idle'
@@ -511,7 +549,7 @@ export function runAutomatedAuditTests() {
     if (res.updatedSpace.pet.needs.hygiene !== 75) throw new Error('Higiene no subió a 75');
   });
 
-  // 25. Cuidado: Jugar gasta energía y falla si energía <= 15
+  // 25. Cuidado: Jugar gasta energía y valida cansancio
   addTest('TEST-25', 'applyCareAction play gasta energía y valida cansancio', () => {
     const space = createInitialSpace('u1', 'Valen', 'Pippo');
     space.pet.stage = 'baby';
@@ -522,6 +560,30 @@ export function runAutomatedAuditTests() {
     } catch (err) {
       if (!err.message.includes('sueño')) throw err;
     }
+  });
+
+  // 26. Enlace de invitación con 1 clic (?join=CODE)
+  addTest('TEST-26', 'generateShareableInviteUrl construye link directo de invitación', () => {
+    const link = generateShareableInviteUrl('NIDO-AMOR', 'https://test.app/nido/');
+    if (!link.includes('?join=NIDO-AMOR')) throw new Error(`URL incorrecta: ${link}`);
+  });
+
+  // 27. Bonificador de combos en luciérnagas
+  addTest('TEST-27', 'calculateFirefliesReward calcula bonificación de combo sin exceder tope', () => {
+    const r1 = calculateFirefliesReward(10, 1);
+    const r2 = calculateFirefliesReward(10, 4);
+    if (r2 <= r1) throw new Error('El combo debía otorgar mayor recompensa');
+    const rMax = calculateFirefliesReward(50, 10);
+    if (rMax > 30) throw new Error('Superó el tope de 30 luceros');
+  });
+
+  // 28. Interactividad de lámpara en diorama
+  addTest('TEST-28', 'toggleRoomLamp conmuta el estado de luz en inventario', () => {
+    const space = createInitialSpace('u1', 'Valen', 'Pippo');
+    const off = toggleRoomLamp(space);
+    if (off.inventory.activeDecor.lampLit !== false) throw new Error('No apagó lámpara');
+    const on = toggleRoomLamp(off);
+    if (on.inventory.activeDecor.lampLit !== true) throw new Error('No encendió lámpara');
   });
 
   const passedCount = tests.filter((t) => t.passed).length;

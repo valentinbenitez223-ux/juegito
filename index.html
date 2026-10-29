@@ -26,8 +26,14 @@
       <img src="./assets/icons/icon.svg" alt="Logo de Nuestro Nido" class="brand-icon">
       <div>
         <h1 class="brand-title">Nuestro Nido</h1>
-        <div id="partner-status-badge" style="font-size: 11px; color: var(--text-muted); font-weight: 600;">
-          Cuidando a Pippo juntos
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+          <div id="partner-status-badge" style="font-size: 11px; color: var(--text-muted); font-weight: 600;">
+            Cuidando a Pippo juntos
+          </div>
+          <div id="partner-presence-pill" class="presence-pill offline" title="Estado de tu pareja en el nido">
+            <span class="presence-dot"></span>
+            <span id="partner-presence-text">En espera</span>
+          </div>
         </div>
       </div>
     </div>
@@ -62,9 +68,10 @@
         </div>
 
         <!-- Decoraciones equipadas en la habitación -->
-        <div id="decor-wall-art" class="decor-wall-art" style="display: none;"></div>
-        <div id="decor-lamp" class="decor-lamp" style="display: none;"></div>
-        <div id="decor-plant" class="decor-plant" style="display: none;"></div>
+        <div id="decor-wall-art" class="decor-wall-art" style="display: none;" role="button" tabindex="0" title="Cuadro del nido (Tocalo para leer el mensaje)"></div>
+        <div id="decor-lamp-halo" class="decor-lamp-halo" style="display: none;"></div>
+        <div id="decor-lamp" class="decor-lamp" style="display: none;" role="button" tabindex="0" title="Lámpara del nido (Tocala para encender/apagar)"></div>
+        <div id="decor-plant" class="decor-plant" style="display: none;" role="button" tabindex="0" title="Planta del nido (Tocala para mimarla)"></div>
         <div id="decor-toy" class="decor-toy" style="display: none;"></div>
 
         <!-- Suelo de madera cálida -->
@@ -358,7 +365,15 @@
               </div>
             </div>
             <button class="action-primary-btn" id="btn-copy-invite" style="padding: 8px 14px; font-size: 12px;">
-              Copiar
+              Copiar Código
+            </button>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <button class="action-primary-btn" id="btn-share-whatsapp" style="flex: 1; background-color: #25D366; color: #FFF; font-weight: 700; padding: 10px 8px; font-size: 12px;">
+              📱 Enviar por WhatsApp
+            </button>
+            <button class="action-primary-btn" id="btn-share-link" style="flex: 1; padding: 10px 8px; font-size: 12px;">
+              🔗 Compartir Enlace
             </button>
           </div>
 
@@ -420,9 +435,9 @@
           </div>
         </div>
 
-        <!-- Suite QA Integrada (25 Pruebas Automatizadas) -->
+        <!-- Suite QA Integrada (28 Pruebas Automatizadas) -->
         <div class="ui-card">
-          <h2 class="ui-card-title">🧪 Suite QA Automatizada (25 Pruebas)</h2>
+          <h2 class="ui-card-title">🧪 Suite QA Automatizada (28 Pruebas)</h2>
           <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px;">
             Ejecuta de forma nativa en el navegador todas las pruebas unitarias y de simulación.
           </p>

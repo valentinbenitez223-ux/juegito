@@ -751,3 +751,385 @@ body {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ==========================================================================
+   NUESTRO NIDO | Pulido Visual Indie Studio (Fase 2 y 3)
+   ========================================================================== */
+
+/* 1. Ciclos Horarios Enriquecidos (Mañana, Tarde, Atardecer, Noche) */
+.diorama-stage.is-morning {
+  background: linear-gradient(180deg, #FDF4E7 0%, #F5ECE0 45%, #EBE0D2 100%) !important;
+}
+.diorama-stage.is-morning .diorama-window {
+  background: linear-gradient(180deg, #FDE6C8 0%, #E3E9F3 100%) !important;
+}
+.diorama-stage.is-morning .diorama-floor {
+  background: linear-gradient(180deg, #E6D8C4 0%, #D4C3AB 100%) !important;
+}
+
+.diorama-stage.is-afternoon {
+  background: linear-gradient(180deg, #E4EEF8 0%, #F5F1E8 55%, #EAE3D5 100%) !important;
+}
+.diorama-stage.is-afternoon .diorama-window {
+  background-color: #CEE5F8 !important;
+}
+
+.diorama-stage.is-sunset {
+  background: linear-gradient(180deg, #FCE0CF 0%, #EABEC5 40%, #D2B7D0 80%, #3F3652 100%) !important;
+}
+.diorama-stage.is-sunset .diorama-window {
+  background: linear-gradient(180deg, #FFA987 0%, #B97B95 100%) !important;
+}
+.diorama-stage.is-sunset .diorama-floor {
+  background: linear-gradient(180deg, #6C5564 0%, #4D3945 100%) !important;
+}
+
+/* 2. Micro-animaciones Orgánicas de la Mascota */
+@keyframes blinkEyes {
+  0%, 92%, 100% {
+    transform: scaleY(1);
+  }
+  94%, 98% {
+    transform: scaleY(0.08);
+  }
+}
+
+.pet-blinking-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blinkEyes 4.2s infinite ease-in-out;
+}
+
+@keyframes earTwitchLeft {
+  0%, 86%, 100% {
+    transform: rotate(0deg);
+  }
+  90% {
+    transform: rotate(-10deg);
+  }
+  94% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes earTwitchRight {
+  0%, 84%, 100% {
+    transform: rotate(0deg);
+  }
+  88% {
+    transform: rotate(10deg);
+  }
+  92% {
+    transform: rotate(-4deg);
+  }
+}
+
+.pet-ear-left {
+  transform-box: fill-box;
+  transform-origin: 35% 85%;
+  animation: earTwitchLeft 6.8s infinite ease-in-out;
+}
+
+.pet-ear-right {
+  transform-box: fill-box;
+  transform-origin: 65% 85%;
+  animation: earTwitchRight 7.4s infinite ease-in-out;
+}
+
+.pet-breathing-body {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: idleBreathe 3.6s infinite ease-in-out;
+}
+
+.pet-sleeping-body {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: sleepBreath 4.8s infinite ease-in-out;
+}
+
+@keyframes ecstaticBounce {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  28% { transform: translateY(-18px) scale(0.95, 1.06); }
+  52% { transform: translateY(0) scale(1.08, 0.93); }
+  72% { transform: translateY(-8px) scale(0.98, 1.02); }
+}
+
+.pet-ecstatic-body {
+  animation: ecstaticBounce 1.6s infinite ease-in-out;
+}
+
+@keyframes eggHeartbeat {
+  0%, 100% { transform: scale(1); }
+  35% { transform: scale(1.045); }
+  50% { transform: scale(1); }
+  65% { transform: scale(1.03); }
+}
+
+.egg-pulsing {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: eggHeartbeat 1.8s infinite ease-in-out;
+}
+
+.egg-wobbling {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: eggWobble 2.2s infinite ease-in-out;
+}
+
+/* 3. Muebles Interactivos (Lámpara, Planta, Cuadro) */
+.decor-lamp {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+}
+
+.decor-lamp:hover {
+  transform: scale(1.18);
+}
+
+.decor-lamp:active {
+  transform: scale(0.92);
+}
+
+.decor-lamp.lamp-lit {
+  filter: drop-shadow(0 0 16px rgba(255, 226, 120, 0.95)) drop-shadow(0 0 35px rgba(255, 215, 80, 0.5));
+}
+
+.decor-lamp-halo {
+  position: absolute;
+  top: 110px;
+  right: 5px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 235, 140, 0.45) 0%, rgba(255, 225, 110, 0) 70%);
+  pointer-events: none;
+  z-index: 3;
+  animation: lampGlow 3s infinite ease-in-out;
+}
+
+@keyframes lampGlow {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+.decor-plant {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: bottom center;
+}
+
+.decor-plant:hover {
+  transform: scale(1.12);
+}
+
+.decor-plant:active {
+  transform: scale(0.94);
+}
+
+.decor-plant.rustling {
+  animation: plantRustle 0.6s ease-in-out;
+}
+
+@keyframes plantRustle {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-9deg); }
+  40% { transform: rotate(9deg); }
+  60% { transform: rotate(-5deg); }
+  80% { transform: rotate(3deg); }
+}
+
+.decor-wall-art {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.decor-wall-art:hover {
+  transform: scale(1.1) rotate(-1.5deg);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+}
+
+.decor-wall-art:active {
+  transform: scale(0.94);
+}
+
+/* 4. Indicador de Presencia de la Pareja en Tiempo Real */
+.presence-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-white);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.presence-pill.online {
+  background-color: #EBF7EE;
+  border-color: #A3D8B3;
+  color: #266938;
+}
+
+.presence-pill.offline {
+  background-color: #F8F6F1;
+  border-color: #E6E0D2;
+  color: #8C8474;
+}
+
+.presence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #9E9B95;
+}
+
+.presence-pill.online .presence-dot {
+  background-color: #2ECC71;
+  box-shadow: 0 0 8px #2ECC71;
+  animation: presencePulse 1.8s infinite;
+}
+
+@keyframes presencePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.7; }
+}
+
+/* 5. Cartitas Postales con Estética Papel & Sellos */
+.note-stationery {
+  background-color: #FFFDF9;
+  border: 1.5px dashed #E2D7C5;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(90, 80, 60, 0.05);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.note-stationery:hover {
+  box-shadow: 0 6px 16px rgba(90, 80, 60, 0.09);
+}
+
+.note-stationery.mine {
+  background-color: #F4FAF5;
+  border-color: #CCE3D4;
+}
+
+.postal-stamp {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 18px;
+  border: 1.5px dotted #D6CBB9;
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: rgba(255, 255, 255, 0.85);
+  user-select: none;
+}
+
+.note-reactions-bar {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+  flex-wrap: wrap;
+}
+
+.reaction-chip {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.15s ease, background 0.15s ease;
+  user-select: none;
+}
+
+.reaction-chip:active {
+  transform: scale(1.2);
+}
+
+.reaction-chip.reacted {
+  background-color: #FDE8E8;
+  border-color: #F9B8B8;
+  font-weight: 700;
+}
+
+/* 6. Minijuegos: Cartas 3D y Combos de Luciérnagas */
+.memory-card-3d {
+  height: 68px;
+  perspective: 800px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.memory-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-style: preserve-3d;
+  border-radius: var(--radius-md);
+}
+
+.memory-card-3d.flipped .memory-card-inner {
+  transform: rotateY(180deg);
+}
+
+.memory-card-front, .memory-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  box-shadow: var(--shadow-sm);
+}
+
+.memory-card-front {
+  background: linear-gradient(135deg, #EFE8DA 0%, #E3D9C7 100%);
+  border: 1.5px solid #D6CAB4;
+  color: #8C7B65;
+}
+
+.memory-card-back {
+  background-color: #FFFFFF;
+  border: 2px solid var(--color-sage);
+  transform: rotateY(180deg);
+}
+
+@keyframes comboPop {
+  0% { transform: scale(0.6) rotate(-8deg); opacity: 0; }
+  50% { transform: scale(1.25) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.combo-multiplier-badge {
+  animation: comboPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  color: #3E2404;
+  font-weight: 900;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: 11.5px;
+  display: inline-block;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}

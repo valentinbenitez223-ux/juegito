@@ -67,14 +67,24 @@ while ($true) {
         $commitResult = git commit -m "auto(sync): $timestamp" 2>&1
         Write-SyncLog "Commit realizado: $commitResult"
 
-        # Verificar si hay remoto origin configurado
+        # Intentar push con timeout de 10s para no colgar si requiere credenciales interactivas
         $hasOrigin = git remote get-url origin 2>$null
         if ($hasOrigin) {
-          $pullResult = git pull --rebase origin main 2>&1
-          Write-SyncLog "Pull rebase: $pullResult"
-
-          $pushResult = git push origin main 2>&1
-          Write-SyncLog "Push exitoso: $pushResult"
+          try {
+            git pull --rebase origin main --quiet 2>&1 | Out-Null
+            $p = Start-Process -FilePath "git" -ArgumentList "push origin main" -NoNewWindow -PassThru -ErrorAction SilentlyContinue
+            if ($p) {
+              $finished = $p.WaitForExit(10000)
+              if (-not $finished) {
+                Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+                Write-SyncLog "Aviso: git push espera credenciales. Ejecuta auth-github.bat para autorizar una sola vez."
+              } else {
+                Write-SyncLog "Push finalizado con codigo: $($p.ExitCode)"
+              }
+            }
+          } catch {
+            Write-SyncLog "Error en push: $_"
+          }
         } else {
           Write-SyncLog "Aviso: Remoto 'origin' no configurado aún. Cambios commiteados localmente."
         }

@@ -3,12 +3,22 @@
 // ============================================================================
 
 import { localStore } from './storage.js';
-import { sound, getPetMood, renderPetSVG } from './pet.js';
-import { runAutomatedAuditTests } from './game.js';
+import {
+  sound,
+  getPetMood,
+  renderPetSVG,
+  getCurrentTimeOfDay,
+  triggerHaptic,
+} from './pet.js';
+import {
+  runAutomatedAuditTests,
+  calculateFirefliesReward,
+} from './game.js';
 import {
   FOOD_CATALOG,
   DECOR_CATALOG,
   ACCESSORY_CATALOG,
+  WALL_ART_QUOTES,
 } from './config.js';
 import { syncManager } from './sync.js';
 
@@ -23,7 +33,7 @@ class AppController {
   }
 
   init() {
-    // 1. Registrar Service Worker para PWA
+    // 1. Registrar Service Worker para PWA (offline-ready)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker
@@ -47,18 +57,53 @@ class AppController {
       this.render();
     });
 
-    // 5. Verificar si se solicitó correr los tests por URL (?test=true)
+    // 5. Suscribirse a presencia en tiempo real de la pareja
+    syncManager.onPresenceChange((isOnline) => {
+      this.updatePartnerPresenceUI(isOnline);
+    });
+
+    // 6. Verificar si la URL contiene una invitación (?join=CODIGO)
+    const inviteCode = syncManager.checkUrlForInvite();
+    if (inviteCode) {
+      try {
+        localStore.joinWithInviteCode(inviteCode, 'Sofi');
+        sound.playEvolutionFanfare();
+        triggerHaptic(25);
+        this.showToast(`¡Te uniste con éxito al nido ${inviteCode}! 🎉`);
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } catch (err) {
+        console.warn('Auto-join invitación aviso:', err);
+      }
+    }
+
+    // 7. Verificar si se solicitó correr los tests por URL (?test=true)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('test') === 'true') {
       this.switchTab('settings');
       setTimeout(() => this.runQATests(), 300);
     }
 
-    // 6. Intentar sincronización en la nube si hay config guardada
+    // 8. Intentar sincronización en la nube si hay config guardada
     syncManager.initFirebaseIfConfigured();
 
-    // 7. Primer renderizado
+    // 9. Primer renderizado
     this.render();
+  }
+
+  updatePartnerPresenceUI(isOnline) {
+    const pill = document.getElementById('partner-presence-pill');
+    const text = document.getElementById('partner-presence-text');
+    if (!pill || !text) return;
+
+    if (isOnline) {
+      pill.className = 'presence-pill online';
+      text.textContent = 'En el nido ✨';
+    } else {
+      pill.className = 'presence-pill offline';
+      text.textContent = 'En espera';
+    }
   }
 
   showToast(msg) {
@@ -99,6 +144,7 @@ class AppController {
     if (btnHeaderSettings) {
       btnHeaderSettings.addEventListener('click', () => {
         sound.playTap();
+        triggerHaptic(12);
         this.switchTab('settings');
       });
     }
@@ -107,6 +153,7 @@ class AppController {
     document.querySelectorAll('.tab-nav-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         sound.playTap();
+        triggerHaptic(10);
         const tab = e.currentTarget.getAttribute('data-tab');
         this.switchTab(tab);
       });
@@ -116,6 +163,7 @@ class AppController {
     document.querySelectorAll('.bottom-nav-item').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         sound.playTap();
+        triggerHaptic(10);
         const tab = e.currentTarget.getAttribute('data-nav');
         this.switchTab(tab);
       });
@@ -129,6 +177,41 @@ class AppController {
       });
     }
 
+    // Muebles interactivos en la habitación
+    const decorLamp = document.getElementById('decor-lamp');
+    if (decorLamp) {
+      decorLamp.addEventListener('click', () => {
+        const isLit = localStore.toggleLamp();
+        sound.playSwitch();
+        triggerHaptic(15);
+        this.showToast(isLit ? '💡 Encendiste la lámpara cálida del nido.' : 'Apagaste la lámpara.');
+        this.render();
+      });
+    }
+
+    const decorPlant = document.getElementById('decor-plant');
+    if (decorPlant) {
+      decorPlant.addEventListener('click', (e) => {
+        sound.playPlantRustle();
+        triggerHaptic(10);
+        decorPlant.classList.remove('rustling');
+        void decorPlant.offsetWidth;
+        decorPlant.classList.add('rustling');
+        this.spawnParticle(e, '🌿');
+        this.showToast('Acariciaste la plantita. ¡Qué verde y viva está!');
+      });
+    }
+
+    const decorWallArt = document.getElementById('decor-wall-art');
+    if (decorWallArt) {
+      decorWallArt.addEventListener('click', () => {
+        sound.playChime();
+        triggerHaptic(12);
+        const quote = WALL_ART_QUOTES[Math.floor(Math.random() * WALL_ART_QUOTES.length)];
+        this.showToast(`Cuadro: "${quote}"`);
+      });
+    }
+
     // Botones de cuidados rápidos
     const btnQuickPet = document.getElementById('btn-quick-pet');
     if (btnQuickPet) {
@@ -139,6 +222,7 @@ class AppController {
     if (btnQuickFeed) {
       btnQuickFeed.addEventListener('click', () => {
         sound.playTap();
+        triggerHaptic(10);
         this.switchTab('care');
       });
     }
@@ -148,6 +232,7 @@ class AppController {
       btnQuickClean.addEventListener('click', () => {
         try {
           sound.playBubble();
+          triggerHaptic(15);
           localStore.performCare('clean');
           this.showToast('¡Bañito tibio completado! Pippo quedó reluciente ✨ (+5 Luceros)');
         } catch (err) {
@@ -165,10 +250,12 @@ class AppController {
         try {
           if (willSleep) {
             sound.playLullaby();
+            triggerHaptic(20);
             localStore.performCare('sleep');
             this.showToast('Arropaste a Pippo. ¡Dulces sueños! (+5 Luceros)');
           } else {
             sound.playTap();
+            triggerHaptic(12);
             localStore.performCare('wake');
             this.showToast('Pippo despertó con energía y una sonrisa.');
           }
@@ -196,6 +283,7 @@ class AppController {
       document.querySelectorAll('.sticker-opt').forEach((s) => {
         s.addEventListener('click', (e) => {
           sound.playTap();
+          triggerHaptic(8);
           selectedSticker = e.currentTarget.textContent;
           document.querySelectorAll('.sticker-opt').forEach((el) => (el.style.transform = 'scale(1)'));
           e.currentTarget.style.transform = 'scale(1.3)';
@@ -207,6 +295,7 @@ class AppController {
         const input = document.getElementById('note-input-text');
         if (!input || !input.value.trim()) return;
         sound.playChime();
+        triggerHaptic(15);
         localStore.sendNote(input.value.trim(), selectedSticker);
         input.value = '';
         this.showToast('¡Cartita enviada al buzón del nido! 💌');
@@ -221,6 +310,7 @@ class AppController {
         const input = document.getElementById('ritual-input-text');
         if (!input || !input.value.trim()) return;
         sound.playChime();
+        triggerHaptic(18);
         localStore.answerTodayRitual(input.value.trim());
         input.value = '';
         this.showToast('¡Respuesta guardada con amor! (+10 Luceros) ✨');
@@ -249,7 +339,7 @@ class AppController {
       launchMemory.addEventListener('click', () => this.startMemoryGame());
     }
 
-    // Código de Invitación - Copiar
+    // Código de Invitación - Copiar simple
     const btnCopyInvite = document.getElementById('btn-copy-invite');
     if (btnCopyInvite) {
       btnCopyInvite.addEventListener('click', () => {
@@ -257,13 +347,35 @@ class AppController {
         if (codeElem) {
           navigator.clipboard.writeText(codeElem.textContent.trim());
           sound.playTap();
+          triggerHaptic(10);
           btnCopyInvite.textContent = '¡Copiado!';
-          setTimeout(() => (btnCopyInvite.textContent = 'Copiar'), 2000);
+          setTimeout(() => (btnCopyInvite.textContent = 'Copiar Código'), 2000);
         }
       });
     }
 
-    // Unirse con código
+    // Compartir por WhatsApp directo
+    const btnShareWhatsapp = document.getElementById('btn-share-whatsapp');
+    if (btnShareWhatsapp) {
+      btnShareWhatsapp.addEventListener('click', () => {
+        sound.playTap();
+        triggerHaptic(15);
+        syncManager.shareInviteLink(true);
+      });
+    }
+
+    // Compartir Link directo / Copiar
+    const btnShareLink = document.getElementById('btn-share-link');
+    if (btnShareLink) {
+      btnShareLink.addEventListener('click', async () => {
+        sound.playTap();
+        triggerHaptic(15);
+        const res = await syncManager.shareInviteLink(false);
+        this.showToast(res.message);
+      });
+    }
+
+    // Unirse con código manual
     const btnJoinCode = document.getElementById('btn-join-code');
     if (btnJoinCode) {
       btnJoinCode.addEventListener('click', () => {
@@ -271,6 +383,7 @@ class AppController {
         if (!input || !input.value.trim()) return;
         try {
           sound.playChime();
+          triggerHaptic(20);
           localStore.joinWithInviteCode(input.value.trim(), 'Sofi');
           this.showToast('¡Te uniste con éxito al nido de tu pareja! 🎉');
           input.value = '';
@@ -285,6 +398,7 @@ class AppController {
     if (btnSwitchActor) {
       btnSwitchActor.addEventListener('click', () => {
         sound.playTap();
+        triggerHaptic(10);
         localStore.switchPartnerProfile();
         const user = localStore.getCurrentUser();
         this.showToast(`Ahora estás jugando como ${user.name}`);
@@ -302,6 +416,7 @@ class AppController {
           space.pet.name = input.value.trim();
           localStore.saveSpace(space);
           sound.playTap();
+          triggerHaptic(12);
           this.showToast(`¡Nombre actualizado a ${space.pet.name}!`);
         }
       });
@@ -310,18 +425,21 @@ class AppController {
     // Simulaciones de Ausencia (Cero Castigo)
     document.getElementById('btn-sim-24h')?.addEventListener('click', () => {
       sound.playTap();
+      triggerHaptic(10);
       localStore.simulateAbsence(24);
       this.showToast('Simulada ausencia de 24h. Piso seguro respetado (+15 Luceros).');
     });
 
     document.getElementById('btn-sim-48h')?.addEventListener('click', () => {
       sound.playTap();
+      triggerHaptic(10);
       localStore.simulateAbsence(48);
       this.showToast('Simulada ausencia de 48h. Cero castigo verificado.');
     });
 
     document.getElementById('btn-sim-72h')?.addEventListener('click', () => {
       sound.playTap();
+      triggerHaptic(10);
       localStore.simulateAbsence(72);
       this.showToast('Simulada ausencia de 72h. Cero castigo verificado.');
     });
@@ -331,6 +449,7 @@ class AppController {
     if (btnRunTests) {
       btnRunTests.addEventListener('click', () => {
         sound.playTap();
+        triggerHaptic(12);
         this.runQATests();
       });
     }
@@ -345,6 +464,7 @@ class AppController {
           const cfg = JSON.parse(input.value.trim());
           syncManager.saveCustomFirebaseConfig(cfg);
           sound.playChime();
+          triggerHaptic(15);
           this.showToast('Configuración de Firebase guardada.');
         } catch {
           this.showToast('JSON de configuración inválido.');
@@ -358,6 +478,7 @@ class AppController {
       btnResetData.addEventListener('click', () => {
         if (confirm('¿Estás seguro de que querés reiniciar el nido a un nuevo huevito?')) {
           sound.playTap();
+          triggerHaptic(20);
           localStore.resetAllData();
           this.showToast('Nido reiniciado.');
         }
@@ -370,6 +491,7 @@ class AppController {
     if (!space) return;
 
     sound.playPurr();
+    triggerHaptic(15);
     this.isPettedAnimation = true;
     setTimeout(() => {
       this.isPettedAnimation = false;
@@ -514,7 +636,7 @@ class AppController {
       }
     }
 
-    // Diorama (Día / Noche y Entorno)
+    // Diorama (Ciclo Horario Dinámico: mañana, tarde, atardecer, noche)
     const dioramaStage = document.getElementById('diorama-stage');
     const windowSun = document.getElementById('window-sun');
     const windowCloud = document.getElementById('window-cloud');
@@ -522,11 +644,17 @@ class AppController {
 
     if (dioramaStage) {
       const isNight = space.pet.isSleeping;
-      dioramaStage.className = `diorama-stage ${isNight ? 'is-night' : 'is-day'}`;
+      const timeOfDay = isNight ? 'night' : getCurrentTimeOfDay();
+      dioramaStage.className = `diorama-stage is-${timeOfDay}`;
+
       if (windowSun && windowCloud && windowMoon) {
-        windowSun.style.display = isNight ? 'none' : 'block';
-        windowCloud.style.display = isNight ? 'none' : 'block';
-        windowMoon.style.display = isNight ? 'block' : 'none';
+        const showSun = timeOfDay === 'morning' || timeOfDay === 'afternoon';
+        const showCloud = timeOfDay !== 'night';
+        const showMoon = timeOfDay === 'sunset' || timeOfDay === 'night';
+
+        windowSun.style.display = showSun ? 'block' : 'none';
+        windowCloud.style.display = showCloud ? 'block' : 'none';
+        windowMoon.style.display = showMoon ? 'block' : 'none';
       }
     }
 
@@ -536,6 +664,20 @@ class AppController {
     this.renderDecorSlot('decor-lamp', decor.lamp, decor.lamp === 'lampara_hongo' ? '🍄' : '✨');
     this.renderDecorSlot('decor-plant', decor.plant, decor.plant === 'monstera_maceta' ? '🪴' : '🌿');
     this.renderDecorSlot('decor-toy', decor.toy, '☁️');
+
+    // Estado interactivo de la lámpara
+    const lampEl = document.getElementById('decor-lamp');
+    const lampHalo = document.getElementById('decor-lamp-halo');
+    if (lampEl) {
+      const isLit = space.roomState && space.roomState.lampLit;
+      if (isLit) {
+        lampEl.classList.add('lamp-lit');
+        if (lampHalo) lampHalo.style.display = 'block';
+      } else {
+        lampEl.classList.remove('lamp-lit');
+        if (lampHalo) lampHalo.style.display = 'none';
+      }
+    }
 
     const rugElem = document.getElementById('decor-rug');
     if (rugElem) {
@@ -581,7 +723,7 @@ class AppController {
     if (hatchInfo) {
       if (space.pet.stage === 'egg') {
         const remaining = Math.max(0, 3 - (space.pet.hatchingProgress || 0));
-        hatchInfo.textContent = `¡Faltan ${remaining} caricias o comidas para que nazca!`;
+        hatchInfo.textContent = `¡Faltan ${remaining} caricias o comidas para que rompa el cascarón!`;
         hatchInfo.style.display = 'block';
       } else {
         hatchInfo.style.display = 'none';
@@ -649,11 +791,14 @@ class AppController {
       else thoughtEl.textContent = '¡Ya casi rompe el cascarón!';
     } else {
       switch (mood) {
+        case 'ecstatic':
+          thoughtEl.textContent = '¡Estoy súper feliz saltando por el nido! ✨';
+          break;
         case 'hungry':
           thoughtEl.textContent = 'Tengo hambre... ¿habrá una manzanita dulce?';
           break;
         case 'dirty':
-          thoughtEl.textContent = 'Un bañito tibio me vendría genial...';
+          thoughtEl.textContent = 'Un bañito tibio con burbujas me vendría genial...';
           break;
         case 'sleepy':
           thoughtEl.textContent = 'Bostezo... se me cierran los ojitos...';
@@ -713,6 +858,7 @@ class AppController {
         const foodId = e.currentTarget.getAttribute('data-food');
         try {
           sound.playNibble();
+          triggerHaptic(12);
           localStore.performCare('feed', foodId);
           this.showToast('¡A Pippo le encantó la comidita! (+5 Luceros)');
         } catch (err) {
@@ -730,24 +876,52 @@ class AppController {
     const user = localStore.getCurrentUser();
 
     if (notes.length === 0) {
-      container.innerHTML = '<p style="font-size: 12.5px; color: var(--text-muted);">Aún no hay cartitas. ¡Dejale la primera a tu pareja!</p>';
+      container.innerHTML = '<p style="font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 16px;">Aún no hay cartitas. ¡Dejale la primera a tu amor!</p>';
       return;
     }
+
+    const availableReactions = ['❤️', '🥺', '🫂', '✨'];
 
     container.innerHTML = notes
       .map((n) => {
         const isMine = n.senderId === user.id;
+        const reactions = n.reactions || {};
+
+        const reactionsHtml = availableReactions
+          .map((emoji) => {
+            const count = reactions[emoji] || 0;
+            return `
+              <button class="reaction-chip ${count > 0 ? 'reacted' : ''}" data-note="${n.id}" data-emoji="${emoji}">
+                <span>${emoji}</span>
+                ${count > 0 ? `<span>${count}</span>` : ''}
+              </button>
+            `;
+          })
+          .join('');
+
         return `
-        <div class="note-bubble ${isMine ? 'mine' : ''}">
-          <span style="font-size: 22px;">${n.sticker || '💌'}</span>
-          <div style="flex: 1;">
-            <div class="note-sender">${isMine ? 'Vos' : n.senderName}</div>
-            <div class="note-message">${n.message}</div>
+          <div class="note-stationery ${isMine ? 'mine' : ''}">
+            <div class="postal-stamp">${n.sticker || '💌'}</div>
+            <div class="note-sender">${isMine ? 'Vos' : n.senderName} • ${n.timestamp ? new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Reciente'}</div>
+            <div class="note-message" style="margin-top: 6px; font-size: 14px; padding-right: 28px;">${n.message}</div>
+            <div class="note-reactions-bar">
+              ${reactionsHtml}
+            </div>
           </div>
-        </div>
-      `;
+        `;
       })
       .join('');
+
+    container.querySelectorAll('.reaction-chip').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const noteId = e.currentTarget.getAttribute('data-note');
+        const emoji = e.currentTarget.getAttribute('data-emoji');
+        sound.playTap();
+        triggerHaptic(12);
+        localStore.addNoteReaction(noteId, emoji);
+        this.renderNotes();
+      });
+    });
   }
 
   renderRitual() {
@@ -840,6 +1014,7 @@ class AppController {
       decorGrid.querySelectorAll('.btn-equip-decor').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           sound.playTap();
+          triggerHaptic(10);
           const slot = e.currentTarget.getAttribute('data-slot');
           const id = e.currentTarget.getAttribute('data-id');
           const isEquipped = space.inventory.activeDecor[slot] === id;
@@ -874,6 +1049,7 @@ class AppController {
         accGrid.querySelectorAll('.btn-equip-acc').forEach((btn) => {
           btn.addEventListener('click', (e) => {
             sound.playTap();
+            triggerHaptic(10);
             const id = e.currentTarget.getAttribute('data-id');
             const isEquipped = space.pet.accessory === id;
             localStore.equipAccessory(isEquipped ? null : id);
@@ -925,6 +1101,7 @@ class AppController {
         const name = e.currentTarget.getAttribute('data-name');
         try {
           sound.playChime();
+          triggerHaptic(15);
           localStore.buyItem(type, id);
           this.showToast(`¡Compraste "${name}" con Luceros! ✨`);
         } catch (err) {
@@ -934,20 +1111,27 @@ class AppController {
     });
   }
 
-  // Minijuego 1: Noche de Luciérnagas
+  // Minijuego 1: Noche de Luciérnagas (con Combos y Multiplicadores de Recompensa)
   startFirefliesGame() {
     const container = document.getElementById('active-game-container');
     if (!container) return;
 
     sound.playTap();
+    triggerHaptic(12);
     let score = 0;
+    let combo = 1;
+    let maxCombo = 1;
+    let lastCatchTime = 0;
     let timeLeft = 18;
 
     container.style.display = 'block';
     container.innerHTML = `
       <div style="background-color: #121826; border: 1.5px solid #2B3856; border-radius: var(--radius-lg); padding: 16px; color: #FFF; position: relative;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <span style="font-weight: 800;">✨ Luciérnagas atrapadas: <span id="ff-score">0</span></span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: 800;">✨ Puntos: <span id="ff-score">0</span></span>
+            <span id="ff-combo" class="combo-multiplier-badge" style="display: none;">x1</span>
+          </div>
           <span style="font-weight: 800; color: #F3D88B;">⏳ Tiempo: <span id="ff-timer">18</span>s</span>
           <button id="btn-exit-ff" style="background: none; border: none; color: #FFF; font-size: 18px; cursor: pointer;">✕</button>
         </div>
@@ -958,6 +1142,7 @@ class AppController {
     const arena = document.getElementById('ff-arena');
     const scoreEl = document.getElementById('ff-score');
     const timerEl = document.getElementById('ff-timer');
+    const comboEl = document.getElementById('ff-combo');
 
     document.getElementById('btn-exit-ff')?.addEventListener('click', () => {
       clearInterval(this.minigameTimer);
@@ -969,33 +1154,54 @@ class AppController {
       if (!arena) return;
       const f = document.createElement('div');
       f.style.position = 'absolute';
-      f.style.width = '34px';
-      f.style.height = '34px';
+      f.style.width = '38px';
+      f.style.height = '38px';
       f.style.borderRadius = '50%';
-      f.style.backgroundColor = 'rgba(243, 216, 139, 0.35)';
-      f.style.boxShadow = '0 0 16px #F3D88B';
+      f.style.backgroundColor = 'rgba(243, 216, 139, 0.4)';
+      f.style.boxShadow = '0 0 18px #F3D88B';
       f.style.display = 'flex';
       f.style.alignItems = 'center';
       f.style.justifyContent = 'center';
-      f.style.fontSize = '20px';
+      f.style.fontSize = '22px';
       f.textContent = '✨';
-      f.style.left = `${Math.random() * (arena.clientWidth - 40)}px`;
-      f.style.top = `${Math.random() * (arena.clientHeight - 40)}px`;
+      f.style.left = `${Math.random() * (arena.clientWidth - 45)}px`;
+      f.style.top = `${Math.random() * (arena.clientHeight - 45)}px`;
       f.style.cursor = 'pointer';
       f.style.transition = 'all 400ms ease';
 
-      f.addEventListener('pointerdown', () => {
+      f.addEventListener('pointerdown', (e) => {
+        const now = Date.now();
+        if (now - lastCatchTime < 1300) {
+          combo = Math.min(4, combo + 1);
+        } else {
+          combo = 1;
+        }
+        lastCatchTime = now;
+        if (combo > maxCombo) maxCombo = combo;
+
         sound.playChime();
-        score++;
+        triggerHaptic(12);
+        score += combo;
         if (scoreEl) scoreEl.textContent = score;
+
+        if (comboEl) {
+          if (combo > 1) {
+            comboEl.textContent = `Combo x${combo}! 🔥`;
+            comboEl.style.display = 'inline-block';
+          } else {
+            comboEl.style.display = 'none';
+          }
+        }
+
+        this.spawnParticle(e, '✨');
         f.remove();
       });
 
       arena.appendChild(f);
-      setTimeout(() => f.remove(), 1600);
+      setTimeout(() => f.remove(), 1500);
     };
 
-    const spawnInterval = setInterval(spawnFirefly, 600);
+    const spawnInterval = setInterval(spawnFirefly, 550);
 
     this.minigameTimer = setInterval(() => {
       timeLeft--;
@@ -1005,16 +1211,20 @@ class AppController {
         clearInterval(spawnInterval);
         clearInterval(this.minigameTimer);
 
-        const lucerosEarned = Math.min(25, Math.round(score * 2.2));
+        const lucerosEarned = calculateFirefliesReward(score, maxCombo);
         localStore.recordGameReward('Noche de Luciérnagas', score, lucerosEarned);
-        sound.playChime();
+        sound.playEvolutionFanfare();
+        triggerHaptic(25);
 
         container.innerHTML = `
           <div class="ui-card" style="text-align: center; padding: 24px;">
-            <div style="font-size: 38px;">🎉</div>
-            <h3 style="font-size: 18px; font-weight: 800; margin-top: 8px;">¡Excelente noche de jardín!</h3>
-            <p style="font-size: 13.5px; color: var(--text-muted); margin: 8px 0;">Atrapaste ${score} luciérnagas y ganaron +${lucerosEarned} Luceros para el nido.</p>
-            <button class="action-primary-btn" id="btn-finish-ff" style="margin: 0 auto;">Volver al Nido</button>
+            <div style="font-size: 42px;">🌟</div>
+            <h3 style="font-size: 19px; font-weight: 800; margin-top: 8px;">¡Noche mágica en el jardín!</h3>
+            <p style="font-size: 14px; color: var(--text-muted); margin: 8px 0;">
+              Atrapaste un total de <strong>${score}</strong> puntos (Combo Máximo: <strong>x${maxCombo}</strong>).<br>
+              Sumaron <strong style="color: #8C6A1E;">+${lucerosEarned} Luceros</strong> para el nido.
+            </p>
+            <button class="action-primary-btn" id="btn-finish-ff" style="margin: 12px auto 0 auto;">Volver al Nido</button>
           </div>
         `;
         document.getElementById('btn-finish-ff')?.addEventListener('click', () => {
@@ -1025,12 +1235,13 @@ class AppController {
     }, 1000);
   }
 
-  // Minijuego 2: Memoria del Nido
+  // Minijuego 2: Memoria del Nido (Giro 3D y Efectos de Parejas)
   startMemoryGame() {
     const container = document.getElementById('active-game-container');
     if (!container) return;
 
     sound.playTap();
+    triggerHaptic(12);
     container.style.display = 'block';
 
     const icons = ['🍎', '🫐', '🥞', '🍵', '🧶', '🪴'];
@@ -1042,7 +1253,7 @@ class AppController {
           <h3 style="font-weight: 800;">🧩 Memoria del Nido</h3>
           <button id="btn-exit-memory" style="background: none; border: none; font-size: 18px; cursor: pointer;">✕</button>
         </div>
-        <div id="memory-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;"></div>
+        <div id="memory-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;"></div>
       </div>
     `;
 
@@ -1056,72 +1267,70 @@ class AppController {
     let matchedPairs = 0;
 
     deck.forEach((icon, index) => {
-      const card = document.createElement('div');
-      card.style.height = '62px';
-      card.style.borderRadius = 'var(--radius-md)';
-      card.style.backgroundColor = '#EAE4D7';
-      card.style.display = 'flex';
-      card.style.alignItems = 'center';
-      card.style.justifyContent = 'center';
-      card.style.fontSize = '26px';
-      card.style.cursor = 'pointer';
-      card.style.userSelect = 'none';
-      card.setAttribute('data-icon', icon);
-      card.setAttribute('data-index', index);
-      card.textContent = '❓';
+      const cardWrapper = document.createElement('div');
+      cardWrapper.className = 'memory-card-3d';
+      cardWrapper.setAttribute('data-icon', icon);
+      cardWrapper.setAttribute('data-index', index);
 
-      card.addEventListener('click', () => {
-        if (flippedCards.length >= 2 || card.textContent !== '❓') return;
+      cardWrapper.innerHTML = `
+        <div class="memory-card-inner">
+          <div class="memory-card-front">🌸</div>
+          <div class="memory-card-back">${icon}</div>
+        </div>
+      `;
+
+      cardWrapper.addEventListener('click', () => {
+        if (flippedCards.length >= 2 || cardWrapper.classList.contains('flipped')) return;
 
         sound.playTap();
-        card.textContent = icon;
-        card.style.backgroundColor = 'var(--surface-white)';
-        card.style.border = '2px solid var(--color-sage)';
-        flippedCards.push(card);
+        triggerHaptic(8);
+        cardWrapper.classList.add('flipped');
+        flippedCards.push(cardWrapper);
 
         if (flippedCards.length === 2) {
           const [c1, c2] = flippedCards;
           if (c1.getAttribute('data-icon') === c2.getAttribute('data-icon')) {
             sound.playChime();
+            triggerHaptic(18);
             matchedPairs++;
             flippedCards = [];
 
             if (matchedPairs === icons.length) {
               setTimeout(() => {
                 localStore.recordGameReward('Memoria del Nido', 100, 30);
+                sound.playEvolutionFanfare();
+                triggerHaptic(25);
                 container.innerHTML = `
                   <div class="ui-card" style="text-align: center; padding: 24px;">
-                    <div style="font-size: 38px;">🏆</div>
-                    <h3 style="font-size: 18px; font-weight: 800; margin-top: 8px;">¡Memoria completada!</h3>
-                    <p style="font-size: 13.5px; color: var(--text-muted); margin: 8px 0;">Emparejaron todos los objetos y sumaron +30 Luceros al nido.</p>
-                    <button class="action-primary-btn" id="btn-finish-mem" style="margin: 0 auto;">Volver al Nido</button>
+                    <div style="font-size: 42px;">🏆</div>
+                    <h3 style="font-size: 19px; font-weight: 800; margin-top: 8px;">¡Memoria completada!</h3>
+                    <p style="font-size: 14px; color: var(--text-muted); margin: 8px 0;">
+                      Emparejaron todos los recuerdos y sumaron <strong style="color: #8C6A1E;">+30 Luceros</strong> al nido.
+                    </p>
+                    <button class="action-primary-btn" id="btn-finish-mem" style="margin: 12px auto 0 auto;">Volver al Nido</button>
                   </div>
                 `;
                 document.getElementById('btn-finish-mem')?.addEventListener('click', () => {
                   container.style.display = 'none';
                   container.innerHTML = '';
                 });
-              }, 450);
+              }, 500);
             }
           } else {
             setTimeout(() => {
-              c1.textContent = '❓';
-              c1.style.backgroundColor = '#EAE4D7';
-              c1.style.border = 'none';
-              c2.textContent = '❓';
-              c2.style.backgroundColor = '#EAE4D7';
-              c2.style.border = 'none';
+              c1.classList.remove('flipped');
+              c2.classList.remove('flipped');
               flippedCards = [];
-            }, 800);
+            }, 750);
           }
         }
       });
 
-      grid.appendChild(card);
+      grid.appendChild(cardWrapper);
     });
   }
 
-  // Ejecución de la Suite QA Automatizada (25 Pruebas)
+  // Ejecución de la Suite QA Automatizada (28 Pruebas)
   runQATests() {
     const resultsContainer = document.getElementById('qa-results-container');
     if (!resultsContainer) return;

@@ -10,6 +10,8 @@ import {
   equipDecorItem,
   equipAccessoryItem,
   checkWelcomeBackBonus,
+  toggleRoomLamp,
+  generateShareableInviteUrl,
 } from './game.js';
 import { DAILY_PROMPTS } from './config.js';
 
@@ -30,12 +32,20 @@ const STORAGE_KEYS = {
 class LocalStore {
   constructor() {
     this.broadcast = null;
+    this.subscribers = new Set();
+    this.remoteActionHandler = null;
+
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
         this.broadcast = new BroadcastChannel('nuestro_nido_channel');
         this.broadcast.onmessage = (event) => {
-          if (event.data && event.data.type === 'SYNC_REFRESH') {
-            this.notifyListeners();
+          if (event.data) {
+            if (this.remoteActionHandler) {
+              this.remoteActionHandler(event.data);
+            }
+            if (event.data.type === 'SYNC_REFRESH') {
+              this.notifyListeners();
+            }
           }
         };
       } catch (e) {
@@ -50,8 +60,10 @@ class LocalStore {
         }
       });
     }
+  }
 
-    this.subscribers = new Set();
+  setRemoteActionHandler(handler) {
+    this.remoteActionHandler = handler;
   }
 
   subscribe(callback) {
@@ -121,7 +133,6 @@ class LocalStore {
     this.setItem(STORAGE_KEYS.CURRENT_USER_ID, id);
     this.setItem(STORAGE_KEYS.CURRENT_USER_NAME, name);
 
-    // Actualizar también en el perfil del espacio si existe
     const space = this.getSpace();
     if (space) {
       if (!space.members.includes(id)) {
@@ -132,7 +143,7 @@ class LocalStore {
       space.memberProfiles = space.memberProfiles || {};
       space.memberProfiles[id] = {
         displayName: name,
-        avatarColor: id.includes('valen') ? '#A9C7B1' : '#EFB7B5',
+        avatarColor: id.includes('valen') ? '#8DAF97' : '#E8A7A5',
         lastSeenAt: Date.now(),
       };
       this.saveSpace(space);
@@ -179,7 +190,7 @@ class LocalStore {
       // Crear recuerdos iniciales de inauguración del nido
       this.addMemory({
         title: 'Llegada del Nido',
-        description: `${user.name} preparó este rinconcito cálido para cuidarlo de a dos.`,
+        description: `${user.name} preparó este rincón cálido para cuidarlo juntos de a dos.`,
         icon: '🏡',
         category: 'milestone',
       });
@@ -242,12 +253,10 @@ class LocalStore {
     const msToSubtract = hours * 60 * 60 * 1000;
     const fakePastTime = Date.now() - msToSubtract;
 
-    // Ajustamos la marca temporal de actualización al pasado
     space.pet.lastNeedsUpdate = fakePastTime;
     this.setItem(STORAGE_KEYS.LAST_VISIT_TIME, String(fakePastTime));
     this.saveSpace(space);
 
-    // Ejecutamos re-inicialización con paso del tiempo
     return this.ensureInitialized();
   }
 
@@ -268,11 +277,10 @@ class LocalStore {
       lucerosDelta: result.lucerosEarned,
     });
 
-    // Si nació o evolucionó, guardar recuerdo
     if (space.pet.stage === 'egg' && result.updatedSpace.pet.stage === 'baby') {
       this.addMemory({
         title: '¡Eclosionó Pippo!',
-        description: `El huevito se abrió y nació nuestro compañero.`,
+        description: `El cascarón se rompió y nació nuestro pequeño compañero.`,
         icon: '🐣',
         category: 'hatching',
       });
@@ -294,7 +302,7 @@ class LocalStore {
       userId: user.id,
       userName: user.name,
       actionType: 'decor_changed',
-      details: `${user.name} compró un artículo para el nido`,
+      details: `${user.name} adquirió un nuevo artículo en la tienda del nido`,
       lucerosDelta: 0,
     });
     return updated;
@@ -306,6 +314,14 @@ class LocalStore {
     const updated = equipDecorItem(space, slot, decorId);
     this.saveSpace(updated);
     return updated;
+  }
+
+  toggleLamp() {
+    const space = this.getSpace();
+    if (!space) return false;
+    const updated = toggleRoomLamp(space);
+    this.saveSpace(updated);
+    return updated.inventory.activeDecor.lampLit !== false;
   }
 
   equipAccessory(accessoryId) {
@@ -323,33 +339,32 @@ class LocalStore {
 
     space.economy.luceros += lucerosEarned;
     space.economy.lifetimeLucerosEarned += lucerosEarned;
-    // Jugar también da un poco de diversión a Pippo
-    space.pet.needs.fun = Math.min(100, space.pet.needs.fun + 15);
+    space.pet.needs.fun = Math.min(100, space.pet.needs.fun + 18);
     this.saveSpace(space);
 
     this.addActivity({
       userId: user.id,
       userName: user.name,
       actionType: 'game_played',
-      details: `${user.name} jugó a ${gameName} (Puntaje: ${score}) y consiguió +${lucerosEarned} Luceros`,
+      details: `${user.name} jugó a ${gameName} (Puntos: ${score}) y sumó +${lucerosEarned} Luceros`,
       lucerosDelta: lucerosEarned,
     });
   }
 
-  // --- Cartitas (Notas Compartidas) ---
+  // --- Cartitas (Notas Compartidas) con Reacciones ---
   getNotes() {
     const raw = this.getItem(STORAGE_KEYS.NOTES);
     if (!raw) {
-      // Nota de bienvenida inicial
       return [
         {
           id: 'note_welcome',
           senderId: 'system',
           senderName: 'Nuestro Nido',
-          message: '¡Dejale cartitas y stickers con amor a tu pareja acá!',
+          message: '¡Dejale cartitas cariñosas y stickers con amor a tu pareja acá! 💌',
           sticker: '💌',
           createdAt: Date.now() - 3600000,
           read: true,
+          reactions: {},
         },
       ];
     }
@@ -371,6 +386,7 @@ class LocalStore {
       sticker,
       createdAt: Date.now(),
       read: false,
+      reactions: {},
     };
     notes.unshift(newNote);
     this.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
@@ -379,11 +395,23 @@ class LocalStore {
       userId: user.id,
       userName: user.name,
       actionType: 'decor_changed',
-      details: `${user.name} dejó una nueva cartita cariñosa en el nido ${sticker}`,
+      details: `${user.name} dejó una nueva cartita cariñosa ${sticker}`,
     });
 
     this.broadcastChange();
     return newNote;
+  }
+
+  addNoteReaction(noteId, emoji) {
+    const user = this.getCurrentUser();
+    const notes = this.getNotes();
+    const note = notes.find((n) => n.id === noteId);
+    if (note) {
+      note.reactions = note.reactions || {};
+      note.reactions[user.id] = emoji;
+      this.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
+      this.broadcastChange();
+    }
   }
 
   markNoteAsRead(noteId) {
@@ -409,7 +437,6 @@ class LocalStore {
     }
 
     if (!rituals[today]) {
-      // Seleccionar pregunta determinista basada en el día del año
       const dayIndex =
         Math.floor(Date.now() / (1000 * 60 * 60 * 24)) % DAILY_PROMPTS.length;
       rituals[today] = {
@@ -434,7 +461,6 @@ class LocalStore {
       answeredAt: Date.now(),
     };
 
-    // Revelar respuestas si ambos respondieron o si estamos en modo demo individual
     const partnerId = space ? space.members.find((m) => m !== user.id) : null;
     if (partnerId && ritual.responses[partnerId]) {
       ritual.isRevealed = true;
@@ -445,7 +471,6 @@ class LocalStore {
     rituals[today] = ritual;
     this.setItem(STORAGE_KEYS.RITUALS, JSON.stringify(rituals));
 
-    // Premiar con Luceros
     if (space) {
       space.economy.luceros += 10;
       this.saveSpace(space);
@@ -455,7 +480,7 @@ class LocalStore {
       userId: user.id,
       userName: user.name,
       actionType: 'decor_changed',
-      details: `${user.name} respondió la pregunta del Rito Diario (+10 Luceros)`,
+      details: `${user.name} respondió el Rito Diario (+10 Luceros) ✨`,
       lucerosDelta: 10,
     });
 
@@ -512,11 +537,11 @@ class LocalStore {
       lucerosDelta: act.lucerosDelta,
     };
     activities.unshift(newAct);
-    if (activities.length > 50) activities.pop(); // Mantener últimas 50
+    if (activities.length > 50) activities.pop();
     this.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
   }
 
-  // --- Generación y Canje de Invitaciones (DEF-03 & DEF-04) ---
+  // --- Generación y Canje de Invitaciones (Con Enlaces Directos PWA) ---
   generateInviteCode() {
     const space = this.getSpace();
     const user = this.getCurrentUser();
@@ -533,7 +558,7 @@ class LocalStore {
       spaceId: space.id,
       createdBy: user.id,
       createdAt: Date.now(),
-      expiresAt: Date.now() + 48 * 60 * 60 * 1000, // 48 horas
+      expiresAt: Date.now() + 48 * 60 * 60 * 1000,
       used: false,
     };
 
@@ -554,7 +579,7 @@ class LocalStore {
     return code;
   }
 
-  joinWithInviteCode(code, partnerName) {
+  joinWithInviteCode(code, partnerName = 'Sofi') {
     const cleanCode = code.trim().toUpperCase();
     const raw = this.getItem(STORAGE_KEYS.INVITATIONS);
     let invites = {};
@@ -583,17 +608,18 @@ class LocalStore {
     const space = this.getSpace();
     if (!space) throw new Error('No se encontró el nido asociado.');
 
-    // Evitar sobreescritura de miembros (DEF-03)
-    if (space.members.length >= 2) {
+    if (space.members.length >= 2 && !space.members.includes(curUser.id)) {
       throw new Error('El nido ya tiene sus dos integrantes completos.');
     }
 
-    // Unir a la pareja
     const partnerId = `user_${partnerName.toLowerCase().replace(/\s+/g, '_')}`;
-    space.members.push(partnerId);
+    if (!space.members.includes(partnerId)) {
+      space.members.push(partnerId);
+    }
+    space.memberProfiles = space.memberProfiles || {};
     space.memberProfiles[partnerId] = {
       displayName: partnerName,
-      avatarColor: '#EFB7B5',
+      avatarColor: '#E8A7A5',
       lastSeenAt: Date.now(),
     };
     space.inviteCode = null;
@@ -609,7 +635,7 @@ class LocalStore {
 
     this.addMemory({
       title: '¡Nido Completo!',
-      description: `${partnerName} se sumó al nido. ¡Ahora somos dos cuidando a Pippo!`,
+      description: `${partnerName} se sumó al nido. ¡Ahora somos dos cuidando a Pippo juntos!`,
       icon: '🎉',
       category: 'milestone',
     });
@@ -617,7 +643,6 @@ class LocalStore {
     return space;
   }
 
-  // Reiniciar todo a estado inicial limpio
   resetAllData() {
     this.removeItem(STORAGE_KEYS.SPACE);
     this.removeItem(STORAGE_KEYS.NOTES);
