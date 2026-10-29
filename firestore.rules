@@ -15,24 +15,33 @@ service cloud.firestore {
       return isAuthenticated() && (request.auth.uid in spaceData.members);
     }
 
-    // Perfiles de usuario
+    // Perfiles de usuario (DEF-05: Se prohíbe 'list' para evitar enumeración global de parejas)
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow get: if isAuthenticated();
+      allow list: if false;
       allow write: if isUser(userId);
     }
 
-    // Invitaciones de emparejamiento (un solo uso, máx 2 personas)
+    // Invitaciones de emparejamiento (DEF-04: Se prohíbe 'list' y se bloquea auto-canje y manipulación de campos)
     match /invitations/{inviteCode} {
-      // Cualquier usuario autenticado puede leer una invitación para verificarla
-      allow read: if isAuthenticated();
+      // get individual permitido para validar el código ingresado por la pareja
+      allow get: if isAuthenticated();
+      // Bloqueo total de listar la colección de invitaciones (previene enumeración de códigos)
+      allow list: if false;
+      
       // Solo el creador puede emitir una invitación
-      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
-      // Actualizar la invitación solo para marcarla como 'used' por el segundo integrante
-      allow update: if isAuthenticated() && (
-        // El creador cancelando o el invitado reclamando
-        (resource.data.used == false && request.resource.data.used == true && request.resource.data.usedBy == request.auth.uid) ||
-        resource.data.createdBy == request.auth.uid
-      );
+      allow create: if isAuthenticated() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.used == false;
+
+      // Actualizar la invitación: solo para marcarla como 'used' por el segundo integrante no-creador
+      allow update: if isAuthenticated() &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['used', 'usedBy', 'usedAt']) &&
+                       resource.data.used == false &&
+                       request.resource.data.used == true &&
+                       resource.data.createdBy != request.auth.uid &&
+                       request.resource.data.usedBy == request.auth.uid;
+
       allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
     }
 
@@ -43,18 +52,21 @@ service cloud.firestore {
 
       // Creación del nido: el creador se incluye como único miembro inicial
       allow create: if isAuthenticated() &&
-        request.resource.data.members.size() == 1 &&
-        request.resource.data.members[0] == request.auth.uid;
+                       request.resource.data.members.size() == 1 &&
+                       request.resource.data.members[0] == request.auth.uid;
 
-      // Actualización del nido:
-      // Caso 1: Miembro existente actualiza el nido (mascota, economía, etc.) sin superar 2 miembros
-      // Caso 2: Nuevo usuario se suma como segundo miembro (members.size() pasa de 1 a 2)
+      // Actualización del nido (DEF-03: Bloqueo de secuestro de hogar y sobreescritura de miembros):
+      // Caso 1: Miembro existente actualiza el nido sin alterar el array de miembros
+      // Caso 2: Nuevo usuario se suma como segundo miembro exigiendo que members[0] quede intacto
       allow update: if isAuthenticated() && (
-        (isMemberOfSpace(resource.data) && request.resource.data.members.size() <= 2) ||
+        (isMemberOfSpace(resource.data) && request.resource.data.members == resource.data.members) ||
         (
           resource.data.members.size() == 1 &&
           request.resource.data.members.size() == 2 &&
-          request.resource.data.members[1] == request.auth.uid
+          request.resource.data.members[0] == resource.data.members[0] &&
+          request.resource.data.members[1] == request.auth.uid &&
+          resource.data.members[0] != request.auth.uid &&
+          request.resource.data.inviteCode == resource.data.inviteCode
         )
       );
 
@@ -66,16 +78,17 @@ service cloud.firestore {
         allow read: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data);
         allow create: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data) &&
                          request.resource.data.userId == request.auth.uid;
-        allow update, delete: if false; // El historial es inmutable
+        allow update, delete: if false; // Inmutable
       }
 
-      // Subcolección: Notas y mensajes de pareja
+      // Subcolección: Notas y mensajes de pareja (DEF-05: Solo se permite actualizar estado de lectura 'read')
       match /notes/{noteId} {
         allow read: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data);
         allow create: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data) &&
                          request.resource.data.senderId == request.auth.uid;
-        // Permitir marcar como leída
-        allow update: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data);
+        // La pareja solo puede modificar el campo 'read' y 'readAt', nunca el texto o el remitente
+        allow update: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data) &&
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
         allow delete: if isMemberOfSpace(get(/databases/$(database)/documents/spaces/$(spaceId)).data) &&
                          resource.data.senderId == request.auth.uid;
       }

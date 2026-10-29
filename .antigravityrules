@@ -1,0 +1,6 @@
+# ==============================================================================
+# REGLAS PERMANENTES DE NUESTRO NIDO | Antigravity
+# ==============================================================================
+
+REGLA OBLIGATORIA: Al finalizar cualquier edición, creación o borrado de archivos en este proyecto, tu último paso obligatorio antes de responder al usuario es ejecutar en PowerShell:
+git add -A; if (git status --porcelain) { git commit -m 'auto: actualizacion por Antigravity'; git pull --rebase origin main; git push origin main }

@@ -1,144 +1,135 @@
-# 🌿 Nuestro Nido
-### Un universo virtual compartido por dos personas
+# 🐣 Nuestro Nido | Mascota Compartida de a Dos
 
-**Nuestro Nido** es un juego web y Progressive Web App (PWA) de mascota virtual compartida, diseñado exclusivamente para que **dos personas** cuiden juntas una criatura digital, decoren un hogar acogedor y compartan momentos cotidianos de forma asíncrona.
-
-> **📱 Jugable en el celular sin pagar licencias de App Store ni Play Store:**  
-> Al ser una PWA construida en HTML5, CSS3 modular, TypeScript y React, podés abrirla directamente desde el navegador de tu celular (Chrome en Android o Safari en iOS) y presionar **"Agregar a la pantalla de inicio"** para jugarla a pantalla completa como una app nativa, con soporte fuera de línea y persistencia inmediata.
+> **Un universo virtual compartido por dos personas para cuidar juntas una criatura digital.**
+> Cero costos de licencia de App Store o Play Store, cero pasos de compilación (`buildless`), 100% web nativa y lista para desplegar en **GitHub Pages**.
 
 ---
 
-## 🌟 1. Cualidades Fundamentales del Juego
+## 🌟 Visión del Producto
 
-1. **Personalidad:** La mascota (*Pippo*, nombre personalizable) transmite sus emociones a través de expresiones visuales originales en SVG/CSS, ciclos de respiración, sacudidas de cola, reacciones a caricias y sonidos Web Audio integrados.
-2. **Continuidad:** Las necesidades de la criatura se simulan matemáticamente a partir del tiempo transcurrido desde la última interacción, sin depender de procesos en segundo plano.
-3. **Cooperación:** Exactamente dos integrantes comparten el mismo nido, la misma mascota, la misma economía de *Luceros* y una bitácora común.
-4. **Descubrimiento:** Al entrar en horarios diferentes, podés descubrir qué hizo tu pareja, encontrar cartitas con stickers y desbloquear recuerdos.
-5. **Tranquilidad (Cero Castigo):** La mascota **jamás muere ni retrocede de etapa** por inactividad. Si pasan 72 horas sin entrar, simplemente se mostrará despeinada o con sueño, y al regresar otorgará un bono de bienvenida con mucho cariño.
+**Nuestro Nido** es una experiencia íntima, cálida y relajada diseñada exclusivamente para dos personas que se conocen y quieren compartir la crianza de una mascota virtual (**Pippo**) y la decoración de su hogar en común.
 
----
-
-## 🏗️ 2. Arquitectura Técnica
-
-- **Frontend:** React 18, TypeScript, Vite.
-- **Dirección Artística:** Diorama 2D original con capas de profundidad, sombras suaves, paleta pastel basada en variables CSS (`#F7F3EC`, `#A9C7B1`, `#EFB7B5`, `#F3D88B`, etc.) y animaciones SVG/CSS puras.
-- **Sonido:** Sintetizador Web Audio API puro (`src/services/sound.ts`) con sonidos de caricia, mordiscos, burbujas de baño y canciones de cuna nocturnas. No depende de archivos MP3 externos.
-- **Motor Dual de Sincronización (`src/services/storage.ts`):**
-  - **Modo Demostración / Local Inmediato:** Almacena el estado en `localStorage` e `IndexedDB`. Incluye un selector para alternar entre "Usuario 1 (Valen)" y "Usuario 2 (Sofi)" en el mismo navegador o dispositivo para probar notas, ritos y cuidados asíncronos inmediatamente sin necesidad de configurar nada.
-  - **Modo Nube Compartida (Firebase):** Adaptador integrado para sincronización en tiempo real vía Cloud Firestore y Firebase Authentication.
-- **Seguridad (`firestore.rules`):** Reglas de seguridad estrictas que limitan el acceso únicamente a los dos integrantes autenticados del espacio e impiden la sobreescritura de datos ajenos.
-- **PWA:** `manifest.webmanifest`, service worker (`sw.js`) con estrategia de caché y soporte offline.
-- **Pruebas Automatizadas:** Vitest (22 pruebas unitarias de simulación, economía, clamping, ausencia 24/48/72h y validación de tokens).
+- **Asíncrono y en tiempo real:** Cuando uno alimenta a Pippo o deja una cartita, el otro lo descubre al abrir la aplicación, sin necesidad de conectarse al mismo tiempo.
+- **Cero Castigo y Piso Seguro (15%):** Si la pareja no entra por días o semanas, **Pippo nunca muere ni se pierde el progreso**. Al regresar tras una ausencia de 24 horas o más, la app otorga el **Bono Reencuentro (+15 Luceros)**.
+- **Voz y Tono Rioplatense:** Textos redactados en español natural de Argentina, íntimo y relajado.
+- **Sin Publicidad ni Compras In-App:** Economía 100% basada en el cuidado mutuo (los *Luceros* se ganan acariciando, alimentando, respondiendo el rito diario o jugando minijuegos).
 
 ---
 
-## 📱 3. Cómo Jugar en el Celular (PWA sin App Store)
+## 🚀 Despliegue Inmediato en GitHub Pages (Cero Compilación)
 
-No se requiere pagar suscripciones de desarrollador (Apple Developer Program de 99 USD/año ni Google Play Console):
+El repositorio está estructurado en **HTML5, CSS3 y JavaScript ES6+ Modular nativo** sin requerir Node.js, TypeScript ni herramientas de empaquetado (`npm run build`).
 
-### En Android (Google Chrome):
-1. Abrí el enlace del juego en Chrome (por ejemplo, tu despliegue en Firebase Hosting, Vercel o la IP local de tu red Wi-Fi: `http://192.168.1.XX:4173`).
-2. Tocá el menú de tres puntos (⋮) en la esquina superior derecha.
-3. Seleccioná **"Agregar a la pantalla principal"** o **"Instalar aplicación"**.
-4. ¡Listo! Se creará el ícono en tu pantalla de inicio y se abrirá a pantalla completa.
+### Pasos para publicar tu propio nido gratis:
 
-### En iPhone / iPad (Safari en iOS):
-1. Abrí el enlace en Safari.
-2. Tocá el botón de Compartir (el cuadrado con la flecha hacia arriba en la barra inferior).
-3. Deslizá hacia abajo y seleccioná **"Agregar al inicio"** (o *"Add to Home Screen"*).
-4. Asignale el nombre "Nuestro Nido" y confirmá. Podrás abrirlo sin barras de navegación de Safari.
+1. **Subí este repositorio a GitHub** (público o privado).
+2. Andá a **Settings** > **Pages** en tu repositorio.
+3. En **Branch**, seleccioná `main` y la carpeta `/ (root)`.
+4. Hacé clic en **Save**. En un minuto estará disponible en:
+   ```text
+   https://tu-usuario.github.io/tu-repositorio/
+   ```
+*(Todas las rutas de recursos, íconos, estilos y scripts son estrictamente relativas `./`, garantizando compatibilidad total tanto en la raíz como en subcarpetas).*
 
 ---
 
-## 🚀 4. Instalación y Ejecución Local
+## 📱 Cómo Jugar en el Celular sin Pagar Licencias (PWA)
 
-### Prerrequisitos
-- Node.js (v18 o superior) y npm.
+No necesitás pagar suscripciones de desarrollador de Apple (\$99/año) ni de Google Play (\$25):
 
-### Comandos Principales
+1. **En iPhone (Safari):**
+   - Abrí el enlace del juego.
+   - Tocá el botón **Compartir** (icono de cuadrado con flecha hacia arriba).
+   - Seleccioná **"Agregar a pantalla de inicio"**.
+   - ¡Listo! Se abrirá a pantalla completa como una app nativa con su icono.
 
-```bash
-# 1. Instalar dependencias
-npm install
+2. **En Android (Chrome):**
+   - Abrí el enlace del juego.
+   - Tocá los tres puntos del menú superior derecho.
+   - Seleccioná **"Instalar aplicación"** o **"Agregar a la pantalla principal"**.
 
-# 2. Iniciar servidor de desarrollo con acceso a red local (para abrir desde el celu en la misma Wi-Fi)
-npm run dev
+---
 
-# 3. Ejecutar suite de pruebas de lógica y simulación (22 pruebas)
-npm test
+## 🗂️ Estructura del Repositorio
 
-# 4. Compilar versión de producción optimizada
-npm run build
-
-# 5. Previsualizar la versión de producción
-npm run preview
+```text
+/
+├── index.html                  # Shell HTML5 semántico y accesible
+├── css/
+│   └── styles.css              # Hoja de estilos responsiva, diorama y animaciones
+├── js/
+│   ├── config.js               # Catálogos, tasas de degradación y preguntas diarias
+│   ├── pet.js                  # Sintetizador Web Audio API puro y arte SVG de 4 etapas
+│   ├── game.js                 # Motor de simulación determinista y Suite QA (25 tests)
+│   ├── storage.js              # Persistencia local, BroadcastChannel y multijugador local
+│   ├── sync.js                 # Integración CDN Firebase v10 y resiliencia offline
+│   └── app.js                  # Controlador central de la interfaz y minijuegos
+├── assets/
+│   └── icons/
+│       └── icon.svg            # Icono vectorial oficial del nido
+├── docs/
+│   ├── AUDITORIA_QA.md         # Informe senior con matriz de defectos (DEF-01 a DEF-08)
+│   ├── REFERENCIAS_UXUI.md     # Benchmarks de Widgetable, SumOne, Lovegotchi, etc.
+│   ├── MODELO_DATOS.md         # Esquema de entidades, invariantes y flujos
+│   ├── REGLAS_JUEGO.md         # Ecuaciones matemáticas y mecánicas de bienestar
+│   └── screenshots/            # Capturas de auditoría multi-resolución
+├── manifest.json               # Manifiesto Web PWA
+├── sw.js                       # Service Worker para ejecución offline
+├── firestore.rules             # Reglas endurecidas anti-secuestro de hogar
+├── .gitignore                  # Exclusiones estándar
+└── README.md                   # Documentación principal
 ```
 
-> **💡 Probar en tu celular en la misma red Wi-Fi:**  
-> Al ejecutar `npm run preview` o `npm run dev`, Vite muestra tu IP de red local (ejemplo: `http://192.168.1.98:4173/`). Abrí esa dirección en el navegador de tu celular conectado a la misma red Wi-Fi para jugar inmediatamente.
+---
+
+## 🐣 Las 4 Etapas Evolutivas de Pippo
+
+1. **Huevo Tibio:** Pulsa suavemente en el nido de paja y hojas. Con 3 interacciones de cuidado o caricias, el cascarón se agrieta y eclosiona.
+2. **Bebé Pippo:** Criatura adorable con proporciones redondeadas, mejillas sonrosadas y colita esponjosa.
+3. **Pippo Joven:** Orejitas vivaces, mechón juguetón en la cabeza y animaciones más dinámicas al jugar.
+4. **Pippo Adulto:** Plumaje suave completo, alas mullidas y penacho distinguido.
 
 ---
 
-## ☁️ 5. Configuración de Firebase (Opcional para Nube Remota)
+## 💖 Mecánicas Principales
 
-Por defecto el juego funciona de manera 100% autónoma en modo local. Si deseás sincronizar entre dos celulares a través de Internet:
-
-1. Ingresá a la [Consola de Firebase](https://console.firebase.google.com/) y creá un proyecto gratuito (Plan Spark sin costo).
-2. En **Authentication**, habilitá el proveedor **Anónimo** o **Correo electrónico/Contraseña**.
-3. En **Firestore Database**, creá una base de datos en modo producción.
-4. Creá un archivo `.env` en la raíz del proyecto copiando `.env.example`:
-   ```bash
-   cp .env.example .env
-   ```
-5. Completá las variables con tus credenciales de la consola:
-   ```env
-   VITE_FIREBASE_API_KEY=AIzaSy...
-   VITE_FIREBASE_AUTH_DOMAIN=nuestro-nido.firebaseapp.com
-   VITE_FIREBASE_PROJECT_ID=nuestro-nido
-   VITE_FIREBASE_STORAGE_BUCKET=nuestro-nido.appspot.com
-   VITE_FIREBASE_MESSAGING_SENDER_ID=...
-   VITE_FIREBASE_APP_ID=...
-   ```
-6. Desplegá las reglas de seguridad:
-   ```bash
-   npm install -g firebase-tools
-   firebase login
-   firebase deploy --only firestore:rules
-   ```
-7. Para publicar la aplicación web gratis en Firebase Hosting:
-   ```bash
-   firebase init hosting
-   # Seleccionar 'dist' como public directory y configurar como single-page app
-   npm run build
-   firebase deploy --only hosting
-   ```
-
----
-
-## 🎮 6. Secciones y Mecánicas
-
-- **Nido (Pantalla Principal):** Diorama interactivo con iluminación día/noche, la criatura o huevo en su nido, medidores vitales rápidos, alacena y acciones de cuidado directo.
-- **Cuidados:** Estación integral para alimentar (consume comida del inventario), bañar con esponja y burbujas, jugar o arropar para la siesta (+12/h de energía).
+- **Diorama Vivo:** Escenario 2D interactivo con ventana que refleja el día y la noche, suelo de madera cálida, alfombra, plantas, lámpara hongo y cuadro de estrellas.
+- **Cuidados Rápidos:** Caricias directas tocando a Pippo (con ronroneo Web Audio y partículas flotantes de corazones), alimentación, baño tibio con burbujas y modo siesta.
 - **Diario Compartido:**
-  - *Cartitas:* Mensajes cariñosos con stickers que el otro lee al abrir su sesión.
-  - *Rito Diario:* Pregunta del día con mecánica de revelación conjunta (permanece oculta hasta que ambos responden).
-  - *Bitácora:* Historial transparente de cuidados realizados por cada uno.
-  - *Recuerdos:* Álbum de hitos alcanzados juntos (eclosión, compras, ritos).
-- **Juegos:**
-  - *Noche de Luciérnagas:* Minijuego de reflejos de 25 segundos para atrapar destellos en el jardín.
-  - *Memoria del Nido:* Juego de cartas de memoria con objetos del hogar compartido.
-- **Hogar & Despensa:**
-  - *Habitación:* Colocar alfombras (lana tejida, margarita), plantas (Monstera, helecho), lámparas cálidas (hongo, guirnalda) y cuadros.
-  - *Accesorios:* Equipar sombrerito de hoja, moño rosa, bufanda de lana o corona de flores.
-  - *Despensa:* Comprar alimentos, muebles y accesorios utilizando los *Luceros* obtenidos jugando juntos.
-- **Ajustes y Emparejamiento:** Generación de código de invitación seguro (`NIDO-XXXX`), unirse con código, alternar usuario local para pruebas, cambiar nombres y ajustar efectos sonoros.
+  - *Cartitas:* Buzón de notas de amor con stickers intercambiables.
+  - *Rito Diario:* Una pregunta cotidiana para responder de a dos. La respuesta de la pareja se revela una vez que ambos contestan.
+  - *Álbum de Recuerdos:* Registro de los grandes momentos compartidos (llegada al nido, eclosión, primer accesorio, etc.).
+- **Minijuegos Cooperativos:**
+  - *Noche de Luciérnagas:* Atrapá destellos en el jardín nocturno (hasta +25 Luceros).
+  - *Memoria del Nido:* Emparejá los 6 pares de objetos acogedores (+30 Luceros).
+- **Hogar y Armario:** Comprá comiditas, muebles y accesorios (sombrerito de hoja, moño rosa, bufanda de lana, corona de flores silvestre) en la tienda con los Luceros acumulados.
 
 ---
 
-## 📑 7. Documentación Técnica del Proyecto
+## 🧪 Suite de Pruebas Automatizadas QA (25 Tests)
 
-- [`docs/REFERENCIAS_UXUI.md`](docs/REFERENCIAS_UXUI.md): Investigación comparativa de 15 productos (Widgetable, Lovegotchi, SumOne, Finch, Tamagotchi, Animal Crossing, etc.) con principios adaptados.
-- [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md): Esquemas TypeScript, colecciones de Firestore, reglas de integridad y persistencia.
-- [`docs/REGLAS_JUEGO.md`](docs/REGLAS_JUEGO.md): Ecuaciones de degradación temporal, balance de necesidades, economía de Luceros y filosofía sin castigo.
-- [`firestore.rules`](firestore.rules): Reglas declarativas de seguridad de Firestore para parejas de máximo 2 integrantes.
-- [`docs/screenshots/`](docs/screenshots/): Evidencias visuales capturadas en resoluciones móviles, tablet y escritorio.
+El juego cuenta con un arnés de pruebas integrado en `js/game.js` que verifica todas las invariantes matemáticas y de seguridad:
+
+1. **Desde la App:** En la pestaña **Ajustes** > botón **"Ejecutar Suite QA Completa"**.
+2. **Por URL:** Abrí la página añadiendo `?test=true` (ej: `http://localhost:8080/?test=true`).
+3. **Por consola (Node.js):**
+   ```bash
+   node -e "import('./js/game.js').then(m => console.log(JSON.stringify(m.runAutomatedAuditTests(), null, 2)))"
+   ```
+   **Resultado:** `25 / 25 Tests Aprobados (100% Pass)`.
+
+---
+
+## 🔒 Seguridad y Sincronización Remota (`firestore.rules`)
+
+Si la pareja desea sincronizar en tiempo real a través de internet:
+1. Crean un proyecto gratuito en [Firebase Console](https://console.firebase.google.com/).
+2. Copian la configuración pública en la pestaña **Ajustes > Sincronización en la Nube**.
+3. Las reglas en `firestore.rules` mitigan vulnerabilidades críticas:
+   - **DEF-03:** Bloqueo de secuestro de hogar e inmutabilidad de los miembros iniciales.
+   - **DEF-04:** Bloqueo de enumeración de códigos de invitación y prevención de auto-canje.
+   - **DEF-05:** Bloqueo de enumeración de perfiles y restricción de alteración de cartitas ajenas.
+
+---
+
+*Desarrollado con dedicación para disfrutar en pareja.*

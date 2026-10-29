@@ -1,0 +1,19 @@
+{
+  "name": "Nuestro Nido | Mascota Compartida",
+  "short_name": "Nuestro Nido",
+  "description": "Un universo virtual compartido por dos personas para cuidar juntas una criatura digital.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F7F3EC",
+  "theme_color": "#4E7664",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

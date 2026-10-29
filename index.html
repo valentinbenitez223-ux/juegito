@@ -1,27 +1,502 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Nuestro Nido | Mascota compartida para dos</title>
-    
-    <!-- Metadatos PWA y Móvil -->
-    <meta name="description" content="Un universo virtual compartido por dos personas. Cuidá una mascota digital, decorá su hogar y compartí momentos asíncronos." />
-    <meta name="theme-color" content="#F7F3EC" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Nuestro Nido" />
-    <link rel="apple-touch-icon" href="/icon.svg" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#4E7664">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Nuestro Nido">
+  <meta name="description" content="Un universo virtual compartido por dos personas para cuidar juntas una criatura digital.">
 
-    <!-- Tipografía suave y redondeada -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <title>Nuestro Nido | Mascota Compartida</title>
+
+  <!-- Enlaces con rutas estrictamente relativas (Compatibilidad GitHub Pages / Subdirectorios) -->
+  <link rel="icon" type="image/svg+xml" href="./assets/icons/icon.svg">
+  <link rel="apple-touch-icon" href="./assets/icons/icon.svg">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+  <!-- Encabezado Superior -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <img src="./assets/icons/icon.svg" alt="Logo de Nuestro Nido" class="brand-icon">
+      <div>
+        <h1 class="brand-title">Nuestro Nido</h1>
+        <div id="partner-status-badge" style="font-size: 11px; color: var(--text-muted); font-weight: 600;">
+          Cuidando a Pippo juntos
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="luceros-pill" id="luceros-counter" title="Luceros compartidos del nido">
+        ✨ <span id="luceros-value">50</span>
+      </div>
+      <button class="icon-button" id="btn-toggle-sound" title="Alternar sonido" aria-label="Alternar sonido">
+        <span id="sound-icon">🔊</span>
+      </button>
+      <button class="icon-button" id="btn-header-settings" title="Ajustes del nido" aria-label="Ajustes">
+        ⚙️
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal (Layout Asimétrico en Escritorio / Centrado en Móvil) -->
+  <main class="app-container">
+
+    <!-- Columna Izquierda: Escenario Diorama Permanente & Controles Rápidos -->
+    <section class="diorama-sticky">
+
+      <!-- Escenario Diorama -->
+      <div class="diorama-stage is-day" id="diorama-stage">
+        
+        <!-- Ventana de día / noche con nubes o luna -->
+        <div class="diorama-window" id="diorama-window">
+          <div class="window-sun" id="window-sun"></div>
+          <div class="window-cloud" id="window-cloud"></div>
+          <div class="window-moon" id="window-moon" style="display: none;"></div>
+        </div>
+
+        <!-- Decoraciones equipadas en la habitación -->
+        <div id="decor-wall-art" class="decor-wall-art" style="display: none;"></div>
+        <div id="decor-lamp" class="decor-lamp" style="display: none;"></div>
+        <div id="decor-plant" class="decor-plant" style="display: none;"></div>
+        <div id="decor-toy" class="decor-toy" style="display: none;"></div>
+
+        <!-- Suelo de madera cálida -->
+        <div class="diorama-floor"></div>
+
+        <!-- Alfombra activa -->
+        <div id="decor-rug" class="decor-rug"></div>
+
+        <!-- Mascota Interactiva (Pippo) -->
+        <div class="pet-interactive-target" id="pet-interactive-target" role="button" tabindex="0" aria-label="Tocar a Pippo">
+          <div id="pet-svg-container"></div>
+        </div>
+
+        <!-- Globo de Pensamiento de Pippo -->
+        <div class="pet-thought-bubble" id="pet-thought-bubble">
+          ¡Qué lindo tenerte por acá!
+        </div>
+
+        <!-- Contenedor de partículas flotantes (corazones, Zzz) -->
+        <div id="particles-container"></div>
+      </div>
+
+      <!-- Banner de Reencuentro (+15 Luceros por ausencia >= 24h) -->
+      <div id="welcome-banner-container" style="margin-top: 10px;"></div>
+
+      <!-- Barra de Necesidades Vitales -->
+      <div class="needs-hud" id="needs-hud" style="margin-top: 10px;">
+        <div class="need-item" title="Saciedad">
+          <span class="need-label">🍎 <span id="val-hunger">85%</span></span>
+          <div class="need-progress-bar">
+            <div class="need-progress-fill" id="bar-hunger" style="width: 85%; background-color: var(--color-sage);"></div>
+          </div>
+        </div>
+
+        <div class="need-item" title="Higiene">
+          <span class="need-label">🫧 <span id="val-hygiene">90%</span></span>
+          <div class="need-progress-bar">
+            <div class="need-progress-fill" id="bar-hygiene" style="width: 90%; background-color: var(--color-mist-blue);"></div>
+          </div>
+        </div>
+
+        <div class="need-item" title="Ánimo">
+          <span class="need-label">💖 <span id="val-fun">80%</span></span>
+          <div class="need-progress-bar">
+            <div class="need-progress-fill" id="bar-fun" style="width: 80%; background-color: var(--color-dusty-pink);"></div>
+          </div>
+        </div>
+
+        <div class="need-item" title="Energía">
+          <span class="need-label">⚡ <span id="val-energy">95%</span></span>
+          <div class="need-progress-bar">
+            <div class="need-progress-fill" id="bar-energy" style="width: 95%; background-color: var(--color-butter-yellow);"></div>
+          </div>
+        </div>
+
+        <div class="need-item" title="Confort">
+          <span class="need-label">🧸 <span id="val-comfort">90%</span></span>
+          <div class="need-progress-bar">
+            <div class="need-progress-fill" id="bar-comfort" style="width: 90%; background-color: var(--color-soft-lavender);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botonera de Cuidados Rápidos Inmediatos -->
+      <div class="quick-care-dock" style="margin-top: 10px;">
+        <button class="care-btn" id="btn-quick-pet" aria-label="Acariciar a Pippo">
+          <span class="care-btn-icon">💖</span>
+          <span class="care-btn-text">Acariciar</span>
+        </button>
+
+        <button class="care-btn" id="btn-quick-feed" aria-label="Alimentar a Pippo">
+          <span class="care-btn-icon">🍎</span>
+          <span class="care-btn-text">Alimentar</span>
+        </button>
+
+        <button class="care-btn" id="btn-quick-clean" aria-label="Bañar a Pippo">
+          <span class="care-btn-icon">🫧</span>
+          <span class="care-btn-text">Bañar</span>
+        </button>
+
+        <button class="care-btn" id="btn-quick-sleep" aria-label="Modo Siesta">
+          <span class="care-btn-icon" id="sleep-btn-icon">🌙</span>
+          <span class="care-btn-text" id="sleep-btn-text">Arropar</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- Columna Derecha: Pestañas Secundarias (Cuidados, Diario, Juegos, Hogar, Ajustes) -->
+    <section class="panels-wrapper">
+
+      <!-- Pestañas de Navegación Superior de Paneles -->
+      <nav class="tabs-navigation-panel" aria-label="Secciones del nido">
+        <button class="tab-nav-btn active" data-tab="care">🐾 Cuidados</button>
+        <button class="tab-nav-btn" data-tab="journal">💌 Diario</button>
+        <button class="tab-nav-btn" data-tab="games">🎮 Juegos</button>
+        <button class="tab-nav-btn" data-tab="home">🏡 Hogar</button>
+        <button class="tab-nav-btn" data-tab="settings">⚙️ Ajustes</button>
+      </nav>
+
+      <!-- Panel 1: Cuidados y Despensa -->
+      <div class="tab-content-panel active" id="panel-care">
+        <div class="ui-card">
+          <h2 class="ui-card-title">🍎 Despensa de Comida</h2>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Elegí qué prepararle a <strong id="pet-name-display-1">Pippo</strong> para mimar su pancita.
+          </p>
+
+          <div id="foods-inventory-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+            <!-- Renderizado dinámico desde app.js -->
+          </div>
+        </div>
+
+        <div class="ui-card">
+          <h2 class="ui-card-title">🌱 Crecimiento Compartido</h2>
+          <div style="font-size: 13.5px; display: flex; flex-direction: column; gap: 8px;">
+            <div><strong>Etapa actual:</strong> <span id="pet-stage-name">Huevo Tibio</span></div>
+            <div><strong>Personalidad:</strong> <span id="pet-personality-text">Alegre y curioso</span></div>
+            <div><strong>Interacciones conjuntas:</strong> <span id="care-interactions-count">0</span></div>
+            <div id="egg-hatch-info" style="color: var(--color-sage-deep); font-weight: 600;">
+              ¡Acaricialo o aliméntalo 3 veces para que rompa el cascarón!
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Diario Compartido (Cartitas, Rito Diario, Recuerdos) -->
+      <div class="tab-content-panel" id="panel-journal">
+        
+        <!-- Subpestañas del Diario -->
+        <div style="display: flex; gap: 6px; margin-bottom: 4px;">
+          <button class="action-primary-btn" id="subtab-notes" style="flex: 1; padding: 8px; font-size: 12.5px;">💌 Cartitas</button>
+          <button class="action-primary-btn" id="subtab-ritual" style="flex: 1; padding: 8px; font-size: 12.5px; background-color: var(--surface-white); color: var(--text-muted); border: 1.5px solid var(--border-subtle);">✨ Rito Diario</button>
+          <button class="action-primary-btn" id="subtab-memories" style="flex: 1; padding: 8px; font-size: 12.5px; background-color: var(--surface-white); color: var(--text-muted); border: 1.5px solid var(--border-subtle);">📖 Recuerdos</button>
+        </div>
+
+        <!-- Sección Cartitas -->
+        <div id="journal-notes-section" class="ui-card">
+          <h2 class="ui-card-title">💌 Dejar una Cartita</h2>
+          <form id="form-send-note" style="display: flex; flex-direction: column; gap: 10px;">
+            <textarea id="note-input-text" class="input-text" rows="2" placeholder="Escribile un mensajito dulce a tu pareja..." required></textarea>
+            
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div id="sticker-picker" style="display: flex; gap: 6px; font-size: 20px;">
+                <span class="sticker-opt" style="cursor: pointer;">💌</span>
+                <span class="sticker-opt" style="cursor: pointer;">🌸</span>
+                <span class="sticker-opt" style="cursor: pointer;">☕</span>
+                <span class="sticker-opt" style="cursor: pointer;">✨</span>
+                <span class="sticker-opt" style="cursor: pointer;">🧸</span>
+              </div>
+              <button type="submit" class="action-primary-btn" style="padding: 8px 16px; font-size: 13px;">
+                Enviar Cartita
+              </button>
+            </div>
+          </form>
+
+          <h3 style="font-size: 14px; font-weight: 800; margin-top: 18px; margin-bottom: 8px; color: var(--text-main);">
+            Buzón del Nido
+          </h3>
+          <div class="notes-list" id="notes-container">
+            <!-- Notas dinámicas -->
+          </div>
+        </div>
+
+        <!-- Sección Rito Diario -->
+        <div id="journal-ritual-section" class="ui-card" style="display: none;">
+          <h2 class="ui-card-title">✨ Pregunta Diaria de a Dos</h2>
+          <div style="background-color: #F4F8F5; border: 1.5px solid #D8EADB; padding: 14px; border-radius: var(--radius-md); margin-bottom: 14px;">
+            <p id="ritual-prompt-text" style="font-size: 14px; font-weight: 700; color: var(--color-sage-deep);">
+              ¿Qué pequeño momento de hoy te sacó una sonrisa?
+            </p>
+          </div>
+
+          <form id="form-answer-ritual" style="display: flex; flex-direction: column; gap: 10px;">
+            <textarea id="ritual-input-text" class="input-text" rows="2" placeholder="Tu respuesta sincera (+10 Luceros)..." required></textarea>
+            <button type="submit" class="action-primary-btn" style="align-self: flex-end; padding: 8px 16px; font-size: 13px;">
+              Responder Rito
+            </button>
+          </form>
+
+          <div id="ritual-answers-display" style="margin-top: 16px;">
+            <!-- Respuestas reveladas o bloqueadas -->
+          </div>
+        </div>
+
+        <!-- Sección Recuerdos -->
+        <div id="journal-memories-section" class="ui-card" style="display: none;">
+          <h2 class="ui-card-title">📖 Álbum de Recuerdos del Nido</h2>
+          <div id="memories-container" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Recuerdos desbloqueados -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Panel 3: Rincón de Juegos -->
+      <div class="tab-content-panel" id="panel-games">
+        <div class="ui-card">
+          <h2 class="ui-card-title">🎮 Minijuegos Cooperativos</h2>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+            Jugá un momento para divertir a la criatura y conseguir Luceros para la casa compartida.
+          </p>
+
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Minijuego 1 -->
+            <div id="launch-fireflies-game" style="background-color: #1E2538; color: #FFF; padding: 16px; border-radius: var(--radius-lg); cursor: pointer; display: flex; align-items: center; justify-content: space-between; border: 1.5px solid #364263;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 32px;">✨</span>
+                <div>
+                  <h3 style="font-size: 15px; font-weight: 800;">Noche de Luciérnagas</h3>
+                  <p style="font-size: 12px; color: #B9D5E8;">Atrapá destellos en el jardín nocturno (Reflejos)</p>
+                  <span style="font-size: 11px; color: #F3D88B; font-weight: 700;">Recompensa: hasta +25 Luceros</span>
+                </div>
+              </div>
+              <span style="font-size: 20px; color: #F3D88B;">➔</span>
+            </div>
+
+            <!-- Minijuego 2 -->
+            <div id="launch-memory-game" style="background-color: var(--surface-white); border: 1.5px solid var(--border-subtle); padding: 16px; border-radius: var(--radius-lg); cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 32px;">🧩</span>
+                <div>
+                  <h3 style="font-size: 15px; font-weight: 800; color: var(--text-main);">Memoria del Nido</h3>
+                  <p style="font-size: 12px; color: var(--text-muted);">Emparejá objetos y comidas (Memoria)</p>
+                  <span style="font-size: 11px; color: var(--color-sage-deep); font-weight: 700;">Recompensa: +30 Luceros</span>
+                </div>
+              </div>
+              <span style="font-size: 20px; color: var(--color-sage-deep);">➔</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Área Interactiva de Minijuegos en Pantalla Completa/Modal -->
+        <div id="active-game-container" style="display: none;"></div>
+      </div>
+
+      <!-- Panel 4: Hogar y Tienda -->
+      <div class="tab-content-panel" id="panel-home">
+        
+        <!-- Subpestañas Hogar -->
+        <div style="display: flex; gap: 6px; margin-bottom: 4px;">
+          <button class="action-primary-btn" id="subtab-room" style="flex: 1; padding: 8px; font-size: 12.5px;">🏡 Habitación</button>
+          <button class="action-primary-btn" id="subtab-wardrobe" style="flex: 1; padding: 8px; font-size: 12.5px; background-color: var(--surface-white); color: var(--text-muted); border: 1.5px solid var(--border-subtle);">🎀 Armario</button>
+          <button class="action-primary-btn" id="subtab-shop" style="flex: 1; padding: 8px; font-size: 12.5px; background-color: var(--surface-white); color: var(--text-muted); border: 1.5px solid var(--border-subtle);">🛍️ Tienda</button>
+        </div>
+
+        <!-- Sección Muebles Habitación -->
+        <div id="home-room-section" class="ui-card">
+          <h2 class="ui-card-title">🏡 Decorar la Habitación</h2>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Tocá un objeto desbloqueado para colocarlo o quitarlo de la habitación.
+          </p>
+          <div id="unlocked-decor-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+        </div>
+
+        <!-- Sección Armario de Accesorios -->
+        <div id="home-wardrobe-section" class="ui-card" style="display: none;">
+          <h2 class="ui-card-title">🎀 Armario de Pippo</h2>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Personalizá a Pippo con accesorios desbloqueados.
+          </p>
+          <div id="unlocked-accessories-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+        </div>
+
+        <!-- Sección Tienda de Luceros -->
+        <div id="home-shop-section" class="ui-card" style="display: none;">
+          <h2 class="ui-card-title">🛍️ Bazar del Nido</h2>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Comprá muebles, comiditas y accesorios con los Luceros que ganan juntos.
+          </p>
+          <div id="shop-catalog-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+        </div>
+
+      </div>
+
+      <!-- Panel 5: Ajustes, Código de Pareja y Suite QA -->
+      <div class="tab-content-panel" id="panel-settings">
+        
+        <!-- Tarjeta de Invitación y Conexión de Pareja -->
+        <div class="ui-card">
+          <h2 class="ui-card-title">👥 Conectar con tu Pareja</h2>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Compartí este código para que tu pareja se una al mismo nido desde su celular.
+          </p>
+
+          <div style="background-color: #F8F6F0; border: 1.5px dashed var(--border-subtle); padding: 14px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div>
+              <div style="font-size: 11px; font-weight: 700; color: var(--text-muted);">CÓDIGO DE INVITACIÓN</div>
+              <div id="display-invite-code" style="font-size: 20px; font-weight: 900; letter-spacing: 2px; color: var(--color-sage-deep);">
+                NIDO-AMOR
+              </div>
+            </div>
+            <button class="action-primary-btn" id="btn-copy-invite" style="padding: 8px 14px; font-size: 12px;">
+              Copiar
+            </button>
+          </div>
+
+          <!-- Unirse con código -->
+          <div style="margin-top: 14px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+            <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 6px;">
+              ¿Tenés un código de tu pareja?
+            </label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="input-join-code" class="input-text" placeholder="Ej: NIDO-8K2P" style="text-transform: uppercase;">
+              <button class="action-primary-btn" id="btn-join-code" style="padding: 8px 16px; font-size: 13px; white-space: nowrap;">
+                Unirme
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Perfil y Alternar Actor Local -->
+        <div class="ui-card">
+          <h2 class="ui-card-title">👤 Perfil Activo (Pruebas en 1 Celular)</h2>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div>
+              <div style="font-size: 13.5px; font-weight: 700;">Estás jugando como: <span id="current-actor-name" style="color: var(--color-sage-deep);">Valen</span></div>
+              <div style="font-size: 12px; color: var(--text-muted);">Podés alternar para simular el celular de tu pareja</div>
+            </div>
+            <button class="action-primary-btn" id="btn-switch-actor" style="padding: 8px 14px; font-size: 12.5px;">
+              Alternar a Sofi
+            </button>
+          </div>
+
+          <!-- Cambiar nombre de la criatura -->
+          <div style="border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+            <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 6px;">Nombre de la criatura:</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="input-pet-name" class="input-text" value="Pippo">
+              <button class="action-primary-btn" id="btn-save-pet-name" style="padding: 8px 16px; font-size: 13px;">
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulación de Ausencia (24h, 48h, 72h - Cero Castigo) -->
+        <div class="ui-card">
+          <h2 class="ui-card-title">⏳ Simular Ausencia (Cero Castigo)</h2>
+          <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px;">
+            Comprobá cómo Pippo descansa y nunca muere ni baja del piso del 15%, otorgando el Bono Reencuentro (+15 Luceros).
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <button class="action-primary-btn" id="btn-sim-24h" style="padding: 8px 4px; font-size: 12px; background-color: var(--surface-white); color: var(--text-main); border: 1.5px solid var(--border-subtle);">
+              Simular 24h
+            </button>
+            <button class="action-primary-btn" id="btn-sim-48h" style="padding: 8px 4px; font-size: 12px; background-color: var(--surface-white); color: var(--text-main); border: 1.5px solid var(--border-subtle);">
+              Simular 48h
+            </button>
+            <button class="action-primary-btn" id="btn-sim-72h" style="padding: 8px 4px; font-size: 12px; background-color: var(--surface-white); color: var(--text-main); border: 1.5px solid var(--border-subtle);">
+              Simular 72h
+            </button>
+          </div>
+        </div>
+
+        <!-- Suite QA Integrada (25 Pruebas Automatizadas) -->
+        <div class="ui-card">
+          <h2 class="ui-card-title">🧪 Suite QA Automatizada (25 Pruebas)</h2>
+          <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px;">
+            Ejecuta de forma nativa en el navegador todas las pruebas unitarias y de simulación.
+          </p>
+          <button class="action-primary-btn" id="btn-run-qa-tests" style="width: 100%;">
+            Ejecutar Suite QA Completa
+          </button>
+          <div id="qa-results-container" style="margin-top: 12px; display: none;"></div>
+        </div>
+
+        <!-- Sincronización Firebase Cloud Opcional -->
+        <div class="ui-card">
+          <h2 class="ui-card-title">☁️ Sincronización en la Nube (Opcional)</h2>
+          <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px;">
+            Por defecto funciona sin servidor (PWA estática). Si querés sincronizar entre dos celulares por internet, ingresá la configuración de tu proyecto Firebase:
+          </p>
+          <textarea id="firebase-cfg-json" class="input-text" rows="3" placeholder='{"apiKey": "AIza...", "projectId": "mi-nido", ...}'></textarea>
+          <button class="action-primary-btn" id="btn-save-firebase-cfg" style="margin-top: 8px; width: 100%;">
+            Conectar Firebase
+          </button>
+          <div id="cloud-sync-status-text" style="font-size: 12px; color: var(--color-sage-deep); margin-top: 6px; font-weight: 600;">
+            Estado: Modo Local (PWA sin servidor)
+          </div>
+        </div>
+
+        <!-- Reinicio de Datos -->
+        <div class="ui-card" style="border-color: #F8D7DA;">
+          <h2 class="ui-card-title" style="color: #721C24;">⚠️ Reiniciar Nido</h2>
+          <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px;">
+            Borra los datos locales y crea un nuevo huevo inicial para empezar de cero.
+          </p>
+          <button class="action-primary-btn" id="btn-reset-data" style="background-color: #E06C75; width: 100%;">
+            Reiniciar Todo el Progreso
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Barra de Navegación Inferior para Móviles (Touch Target >= 48px) -->
+  <nav class="bottom-nav-bar" id="bottom-nav-bar" aria-label="Navegación móvil">
+    <button class="bottom-nav-item active" data-nav="care">
+      <span class="bottom-nav-icon">🐾</span>
+      <span class="bottom-nav-label">Nido</span>
+    </button>
+
+    <button class="bottom-nav-item" data-nav="journal">
+      <span class="bottom-nav-icon">💌</span>
+      <span class="bottom-nav-label">Diario</span>
+    </button>
+
+    <button class="bottom-nav-item" data-nav="games">
+      <span class="bottom-nav-icon">🎮</span>
+      <span class="bottom-nav-label">Juegos</span>
+    </button>
+
+    <button class="bottom-nav-item" data-nav="home">
+      <span class="bottom-nav-icon">🏡</span>
+      <span class="bottom-nav-label">Hogar</span>
+    </button>
+
+    <button class="bottom-nav-item" data-nav="settings">
+      <span class="bottom-nav-icon">⚙️</span>
+      <span class="bottom-nav-label">Ajustes</span>
+    </button>
+  </nav>
+
+  <!-- Contenedor Flotante de Avisos Toast -->
+  <div id="toast-container"></div>
+
+  <!-- Controlador Modular Nativo ES6+ (Cero Compilación) -->
+  <script type="module" src="./js/app.js"></script>
+
+</body>
 </html>
