@@ -12,7 +12,8 @@ $userPaths = @(
   "$env:LOCALAPPDATA\Programs\Git\ucrt64\bin",
   "C:\Program Files\Git\cmd",
   "C:\Program Files\Git\bin",
-  "$env:LOCALAPPDATA\Programs\nodejs"
+  "$env:LOCALAPPDATA\Programs\nodejs",
+  "C:\Program Files\nodejs"
 )
 foreach ($p in $userPaths) {
   if ((Test-Path $p) -and ($env:Path -notlike "*$p*")) {
@@ -52,7 +53,6 @@ while ($true) {
       # Debounce de 4 segundos para esperar a que terminen ediciones contiguas
       Start-Sleep -Seconds 4
 
-      # Re-verificar si no hay lock
       if (Test-Path $lockFile) {
         Start-Sleep -Seconds 2
         continue
@@ -61,32 +61,38 @@ while ($true) {
       $statusAfter = git status --porcelain 2>$null
       if ($statusAfter) {
         $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-        Write-SyncLog "Cambios detectados. Sincronizando..."
+        Write-SyncLog "Cambios detectados. Creando commit local..."
 
         git add -A
         $commitResult = git commit -m "auto(sync): $timestamp" 2>&1
         Write-SyncLog "Commit realizado: $commitResult"
+      }
+    }
 
-        # Intentar push con timeout de 10s para no colgar si requiere credenciales interactivas
-        $hasOrigin = git remote get-url origin 2>$null
-        if ($hasOrigin) {
-          try {
-            git pull --rebase origin main --quiet 2>&1 | Out-Null
-            $p = Start-Process -FilePath "git" -ArgumentList "push origin main" -NoNewWindow -PassThru -ErrorAction SilentlyContinue
-            if ($p) {
-              $finished = $p.WaitForExit(10000)
-              if (-not $finished) {
-                Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
-                Write-SyncLog "Aviso: git push espera credenciales. Ejecuta auth-github.bat para autorizar una sola vez."
+    # Comprobar si hay commits locales pendientes de pushear a origin/main
+    $hasOrigin = git remote get-url origin 2>$null
+    if ($hasOrigin) {
+      $unpushed = git log origin/main..HEAD --oneline 2>$null
+      if ($unpushed) {
+        Write-SyncLog "Commits pendientes de subir a origin/main detectados. Intentando push..."
+        try {
+          git pull --rebase origin main --quiet 2>&1 | Out-Null
+          $p = Start-Process -FilePath "git" -ArgumentList "push origin main" -NoNewWindow -PassThru -ErrorAction SilentlyContinue
+          if ($p) {
+            $finished = $p.WaitForExit(10000)
+            if (-not $finished) {
+              Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+              Write-SyncLog "Aviso: git push requiere autenticación con tu cuenta. Ejecuta auth-github.bat para autorizar una sola vez."
+            } else {
+              if ($p.ExitCode -eq 0) {
+                Write-SyncLog "Push exitoso a origin/main! Repositorio sincronizado con GitHub."
               } else {
-                Write-SyncLog "Push finalizado con codigo: $($p.ExitCode)"
+                Write-SyncLog "Push finalizado con código de salida: $($p.ExitCode)"
               }
             }
-          } catch {
-            Write-SyncLog "Error en push: $_"
           }
-        } else {
-          Write-SyncLog "Aviso: Remoto 'origin' no configurado aún. Cambios commiteados localmente."
+        } catch {
+          Write-SyncLog "Error en ciclo de push: $_"
         }
       }
     }
@@ -94,5 +100,5 @@ while ($true) {
     Write-SyncLog "Error en ciclo de auto-push: $_"
   }
 
-  Start-Sleep -Seconds 2
+  Start-Sleep -Seconds 5
 }
